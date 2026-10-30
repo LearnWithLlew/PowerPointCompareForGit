@@ -17,7 +17,7 @@
 1. [x] Record known gaps as named passing tests, with TODOs to flip them
 
 ## Build and CI
-1. [ ] `build_and_test.sh` and `build_and_test.cmd`
+1. [x] `build_and_test.sh` and `build_and_test.cmd`
 1. [ ] Build and test workflow on push and PR
 1. [ ] Tidy code workflow (main only)
 1. [ ] Markdown link check workflow
