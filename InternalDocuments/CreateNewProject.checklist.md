@@ -28,7 +28,7 @@
 ## Packaging
 1. [x] Package metadata: ID, description, license, repository URL
 1. [x] Version comes from the release tag, not the csproj
-1. [ ] Package icon
+1. [x] Package icon
 1. [ ] Native assets for every target OS
 1. [x] Check the package ID is free on nuget.org (checked 2026-10-30: free)
 

@@ -15,6 +15,7 @@
     <Authors>Llewellyn Falco</Authors>
     <Description>Render PowerPoint decks from git history to PNG and compare versions in your diff tool.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageTags>powerpoint;pptx;git;diff;png;cli;dotnet-tool</PackageTags>
     <RepositoryUrl>https://github.com/LearnWithLlew/PowerPointCompareForGit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -27,6 +28,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="PowerPointCompareForGit.Tests" />
+    <None Include="../../icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>
