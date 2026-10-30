@@ -6,7 +6,7 @@
 
 A .NET tool that shows what changed in a PowerPoint deck across git commits. It renders each version of a `.pptx` to a single tall PNG (all slides stacked) and opens two versions side by side in your diff tool.
 
-> **Status:** early development. Argument parsing works; rendering and comparing are not implemented yet.
+> **Status:** early development. Rendering the last commit (`CreatePowerpointCheckpoint file.pptx`) works; `--commit`, `--compare` and `--reset` are not implemented yet.
 
 ## Install
 

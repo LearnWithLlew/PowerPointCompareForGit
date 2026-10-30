@@ -15,6 +15,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libreoffice-impress
       - run: ./build_and_test.sh
       - name: Pack (version from tag, v1.2.3 -> 1.2.3)
         run: dotnet pack src/PowerPointCompareForGit --configuration Release --no-build -p:Version="${GITHUB_REF_NAME#v}" --output nupkgs

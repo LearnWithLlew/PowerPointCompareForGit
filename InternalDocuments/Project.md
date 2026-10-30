@@ -27,13 +27,15 @@ The tool never creates commits. Uncommitted edits are rendered directly from the
 Uses LibreOffice in headless mode, with no native code in our own package:
 1. Split the deck into one single-slide `.pptx` per slide with `DocumentFormat.OpenXml` (managed, MIT).
 1. Convert all of them to PNG in a single launch: `soffice --headless --convert-to png --outdir <tmp> slide1.pptx slide2.pptx ...`
-1. Stitch the PNGs vertically into one long PNG with `SixLabors.ImageSharp` (managed; Six Labors Split License, free for open source).
+1. Stitch the PNGs vertically into one long PNG with `StbImageSharp` / `StbImageWriteSharp` (managed, public domain/MIT). Slide labels use a built-in 5x7 pixel font, so no system fonts are needed.
 
 - Free and cross-platform (Mac/Windows/Linux), works in CI.
 - Requires LibreOffice to be installed; it is the only external dependency.
 - Accepted tradeoff: rendering is not pixel-identical to PowerPoint.
 - Why not `--convert-to png` with a `PageRange` filter option: LibreOffice 25.2 ignores `PageRange` and `PixelWidth` and always exports slide 1 at its default size.
 - Why not PDF + PDFtoImage/SkiaSharp: it would ship native assets per OS.
+- Why not ImageSharp: 4.x fails Release builds without a Six Labors license key, even for open source.
+- LibreOffice runs with a private profile folder (`-env:UserInstallation`), so it works while the user has LibreOffice open.
 - Measured: a 3-slide deck converted in one launch in 1.78 s (LibreOffice 25.2, Mac).
 
 ### Layout
