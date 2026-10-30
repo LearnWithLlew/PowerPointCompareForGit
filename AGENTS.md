@@ -15,7 +15,7 @@ At the end of every task (not just complex ones), report on all of these, briefl
 
 Treat this end-of-task report as mandatory, like a checklist item — don't let it get crowded out by concise-output-style guidance; it's a small fixed addition, not a violation of terseness.
 
-Information about this project found in @InternalDocuments/Projects
+Information about this project found in @InternalDocuments/Project.md
 
 Never use Claude Code's persistent memory system for this project. Durable guidance (conventions, process corrections, preferences) belongs in-repo instead — this file, `InternalDocuments/`, or a skill — so it's visible in version control and to every contributor, not just stored privately for one user.
 
