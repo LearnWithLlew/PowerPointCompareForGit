@@ -9,7 +9,7 @@
 1. [x] Solution file (`.slnx`)
 1. [x] `global.json` pinning the SDK
 1. [x] Central package management (`Directory.Packages.props`)
-1. [ ] Project skills in `.claude/skills/` (e.g. C# style)
+1. [x] Project skills in `.claude/skills/` (e.g. C# style)
 
 ## Tests
 1. [ ] xunit test project in the solution
