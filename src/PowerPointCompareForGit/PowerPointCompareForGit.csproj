@@ -11,4 +11,8 @@
     <ToolCommandName>CreatePowerpointCheckpoint</ToolCommandName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="PowerPointCompareForGit.Tests" />
+  </ItemGroup>
+
 </Project>

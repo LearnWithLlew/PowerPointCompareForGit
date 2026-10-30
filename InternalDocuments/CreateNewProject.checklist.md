@@ -13,7 +13,7 @@
 
 ## Tests
 1. [x] xunit test project in the solution
-1. [ ] Extract logic out of `Program` into testable classes
+1. [x] Extract logic out of `Program` into testable classes
 1. [ ] Record known gaps as named passing tests, with TODOs to flip them
 
 ## Build and CI
