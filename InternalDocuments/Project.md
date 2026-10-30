@@ -88,3 +88,31 @@ Note: executable names and install paths above are unverified; confirm before im
 
 ## Platform
 Targets `net10.0` (current LTS), with `global.json` pinning SDK `10.0.402`, matching SafeQuery.
+
+## Naming
+- Repo, solution, project and NuGet package ID: `PowerPointCompareForGit`.
+- Command name: `CreatePowerpointCheckpoint` (set via `<ToolCommandName>`).
+- License: Apache-2.0.
+
+# Project Structure
+
+```
+PowerPointCompareForGit.slnx
+src/PowerPointCompareForGit/               # the dotnet tool
+tests/PowerPointCompareForGit.Tests/       # xunit tests
+tools/create-commit-message.sh             # commit message builder
+build_and_test.sh / build_and_test.cmd     # local and CI build entry point
+```
+
+CI: GitHub Actions
+- build and test (uses the script) on push and PR
+- publish on GitHub release, version from tag (`v1.2.3` becomes `1.2.3`), using nuget.org trusted publishing
+
+# Release Checklist
+
+Tracked in [CreateNewProject.checklist.md](CreateNewProject.checklist.md).
+
+# TODO
+
+1. Verify the diff-tool executable names and install paths in the Diff tool table.
+1. Verify the LibreOffice install paths and the brew/winget package names.
