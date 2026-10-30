@@ -3,7 +3,8 @@
 namespace PowerPointCompareForGit;
 
 // What the user asked for. Compare is true for --compare, with 0, 1 or 2 shas in CompareShas.
-internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool Compare, IReadOnlyList<string> CompareShas, bool Reset);
+// Pages is null when the whole deck is wanted.
+internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool Compare, IReadOnlyList<string> CompareShas, PageRange? Pages, bool Reset);
 
 internal static class CommandLineArguments
 {
@@ -29,6 +30,12 @@ internal static class CommandLineArguments
         AllowMultipleArgumentsPerToken = true
     };
 
+    private static readonly Option<string?> PagesOption = new("--pages")
+    {
+        Description = "Only these slides, e.g. 40 or 2-25, one PNG per slide (with --compare, a range is one stitched PNG per version). Past the end means the last slide.",
+        HelpName = "pages"
+    };
+
     private static readonly Option<bool> ResetOption = new("--reset")
     {
         Description = "Clear local settings."
@@ -42,7 +49,7 @@ internal static class CommandLineArguments
             AI agents: see {AgentSkillUrl}
             """)
         {
-            FileArgument, CommitOption, CompareOption, ResetOption
+            FileArgument, CommitOption, CompareOption, PagesOption, ResetOption
         };
         rootCommand.Validators.Add(result =>
         {
@@ -60,6 +67,11 @@ internal static class CommandLineArguments
             {
                 result.AddError("--commit and --compare can't be used together.");
             }
+
+            if (result.GetValue(PagesOption) is { } pages && PageRange.Parse(pages) is null)
+            {
+                result.AddError("--pages must be a page like 40 or a range like 2-25.");
+            }
         });
         return rootCommand;
     }
@@ -72,6 +84,7 @@ internal static class CommandLineArguments
             commits,
             parseResult.GetResult(CompareOption) is not null,
             parseResult.GetValue(CompareOption) ?? [],
+            parseResult.GetValue(PagesOption) is { } pages ? PageRange.Parse(pages) : null,
             parseResult.GetValue(ResetOption));
     }
 }

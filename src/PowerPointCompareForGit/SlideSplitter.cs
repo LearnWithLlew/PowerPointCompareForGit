@@ -8,23 +8,27 @@ internal static class SlideSplitter
     // Writes one copy of the deck per slide (slide0001.pptx, slide0002.pptx, ...), each keeping only that slide.
     // Returns the copies in slide order.
     internal static IReadOnlyList<string> Split(string deckPath, string outputFolder)
-    {
-        int count;
-        using (var deck = PresentationDocument.Open(deckPath, false))
-        {
-            count = SlideIds(deck).Count;
-        }
+        => Split(deckPath, outputFolder, Enumerable.Range(1, CountSlides(deckPath)).ToList());
 
+    // Same, for only the given 1-based slide numbers.
+    internal static IReadOnlyList<string> Split(string deckPath, string outputFolder, IReadOnlyList<int> slideNumbers)
+    {
         var copies = new List<string>();
-        for (var keep = 0; keep < count; keep++)
+        foreach (var slideNumber in slideNumbers)
         {
-            var copy = Path.Combine(outputFolder, $"slide{keep + 1:D4}.pptx");
+            var copy = Path.Combine(outputFolder, $"slide{slideNumber:D4}.pptx");
             File.Copy(deckPath, copy, overwrite: true);
-            KeepOnly(copy, keep);
+            KeepOnly(copy, slideNumber - 1);
             copies.Add(copy);
         }
 
         return copies;
+    }
+
+    internal static int CountSlides(string deckPath)
+    {
+        using var deck = PresentationDocument.Open(deckPath, false);
+        return SlideIds(deck).Count;
     }
 
     private static void KeepOnly(string path, int keep)

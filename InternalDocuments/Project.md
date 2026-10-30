@@ -12,6 +12,8 @@ CreatePowerpointCheckpoint file.pptx --commit sha1,sha2,sha3  # create 3 pngs
 CreatePowerpointCheckpoint file.pptx --compare sha1 sha2      # sha1 vs sha2
 CreatePowerpointCheckpoint file.pptx --compare                # working copy vs last commit that changed the file (or last two such commits if no uncommitted edits)
 CreatePowerpointCheckpoint file.pptx --compare sha1           # working copy vs sha1
+CreatePowerpointCheckpoint file.pptx --pages 40               # only slide 40, can be combined with --commit or --compare
+CreatePowerpointCheckpoint file.pptx --pages 2-25             # only slides 2 to 25
 CreatePowerpointCheckpoint --reset                            # clears local settings
 ```
 
@@ -19,6 +21,12 @@ CreatePowerpointCheckpoint --reset                            # clears local set
 Without `--compare`, the tool prints the path of each PNG and opens nothing. Previews already in the cache are not re-rendered; their paths are just printed.
 
 With `--compare`, it renders both versions (if needed) and opens them in the configured diff tool.
+
+### Pages
+- Without `--compare`, `--pages` writes one PNG per slide, with no gray band; the file name carries the slide number.
+- With `--compare`, a range is stitched into one PNG per version, so it opens a single diff window, and the bands show the real slide numbers. A single page compares the two page files.
+- Pages past the end go to the last slide: `--pages 40` on a 30-slide deck renders slide 30, and `--pages 2-25` on a 10-slide deck renders 2 to 10. Each version clamps to its own length, so in a compare the same page number can land on different slides.
+- Only the requested slides are rendered, so this is much faster than the whole deck on long decks. The deck is still read from git on every run, even when the pages are cached, to find out how many slides it has.
 
 ### Uncommitted edits
 The tool never creates commits. Uncommitted edits are rendered directly from the file on disk to `my.pptx.working.png` (in the same folder as the cached previews), which is overwritten each run.
@@ -67,11 +75,13 @@ Previews are cached inside the repo's `.git/` folder, so git never tracks them a
 ```
 .git/pptx-previews/<path-to-deck>/my.pptx.<shortsha>.png
 .git/pptx-previews/<path-to-deck>/my.pptx.working.png
+.git/pptx-previews/<path-to-deck>/my.pptx.<shortsha>.page.1.png        # --pages
+.git/pptx-previews/<path-to-deck>/my.pptx.<shortsha>.pages.2-25.png    # --pages with a range and --compare
 ```
 
 - Uses the short (7-char) SHA so file names stay readable in the diff tool.
 - The cache persists, so each commit is rendered only once.
-- `working.png` is overwritten each run.
+- `working.png` is overwritten each run, and so are the working copy's page files.
 
 ## Settings
 Prompts (diff tool, LibreOffice install) go to stderr, so stdout stays a clean list of PNG paths.

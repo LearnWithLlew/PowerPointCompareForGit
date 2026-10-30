@@ -57,6 +57,33 @@ public class CommandLineArgumentsTests
     }
 
     [Fact]
+    public void PagesAreOptional()
+    {
+        Assert.Null(Parse("deck.pptx").Pages);
+    }
+
+    [Fact]
+    public void PagesTakesASinglePage()
+    {
+        Assert.Equal(new PageRange(40, 40), Parse("deck.pptx", "--pages", "40").Pages);
+    }
+
+    [Fact]
+    public void PagesTakesARangeAndWorksWithCompare()
+    {
+        var request = Parse("deck.pptx", "--compare", "sha1", "--pages", "2-25");
+
+        Assert.Equal(new PageRange(2, 25), request.Pages);
+        Assert.Equal(["sha1"], request.CompareShas);
+    }
+
+    [Fact]
+    public void InvalidPagesAreRejected()
+    {
+        Assert.Contains("--pages must be a page like 40 or a range like 2-25.", Errors("deck.pptx", "--pages", "25-2"));
+    }
+
+    [Fact]
     public void ResetNeedsNoFile()
     {
         var request = Parse("--reset");

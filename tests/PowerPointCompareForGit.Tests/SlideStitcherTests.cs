@@ -39,6 +39,18 @@ public class SlideStitcherTests
     }
 
     [Fact]
+    public void BandLabelStartsAtFirstSlideNumber()
+    {
+        static IEnumerable<Rgba> Band(RgbaImage image)
+            => Enumerable.Range(0, 200).SelectMany(x => Enumerable.Range(0, SlideStitcher.BandHeight).Select(y => image[x, y]));
+
+        var fromOne = SlideStitcher.Stitch([new RgbaImage(200, 10, Red)]);
+        var fromFive = SlideStitcher.Stitch([new RgbaImage(200, 10, Red)], firstSlideNumber: 5);
+
+        Assert.NotEqual(Band(fromOne), Band(fromFive));
+    }
+
+    [Fact]
     public void SavesAndLoadsPng()
     {
         using var folder = new TestFolder();

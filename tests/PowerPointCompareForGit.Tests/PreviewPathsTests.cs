@@ -24,6 +24,22 @@ public class PreviewPathsTests
     }
 
     [Fact]
+    public void PageFileSitsNextToTheOtherPreviews()
+    {
+        var path = PreviewPaths.ForPage(RepoRoot, "decks/my.pptx", "0123456789abcdef", 1);
+
+        Assert.Equal(Expected("decks", "my.pptx.0123456.page.1.png"), path);
+    }
+
+    [Fact]
+    public void StitchedRangeFileNamesTheRange()
+    {
+        var path = PreviewPaths.ForPages(RepoRoot, "decks/my.pptx", PreviewPaths.WorkingCopy, new PageRange(2, 25));
+
+        Assert.Equal(Expected("decks", "my.pptx.working.pages.2-25.png"), path);
+    }
+
+    [Fact]
     public void DeckAtRepoRootHasNoSubfolder()
     {
         var path = PreviewPaths.For(RepoRoot, "my.pptx", "0123456789abcdef");

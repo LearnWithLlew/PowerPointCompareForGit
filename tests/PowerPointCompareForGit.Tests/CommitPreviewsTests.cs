@@ -38,6 +38,74 @@ public class CommitPreviewsTests
     }
 
     [Fact]
+    public void RangeRendersOnePngPerPageClampedToTheDeck()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+        var sha = repository.ResolveCommit("HEAD");
+
+        var previews = CommitPreviews.RenderPages(repository, "decks/my.pptx", deckPath, sha, new PageRange(2, 25));
+
+        Assert.Equal(
+            [PreviewPaths.ForPage(repository.Root, "decks/my.pptx", sha, 2), PreviewPaths.ForPage(repository.Root, "decks/my.pptx", sha, 3)],
+            previews);
+        Assert.All(previews, preview => Assert.Equal(SlideHeight, RgbaImage.LoadPng(preview).Height));
+    }
+
+    [Fact]
+    public void PagePastTheEndRendersTheLastSlide()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+        var sha = repository.ResolveCommit("HEAD");
+
+        var preview = Assert.Single(CommitPreviews.RenderPages(repository, "decks/my.pptx", deckPath, sha, new PageRange(40, 40)));
+
+        Assert.Equal(PreviewPaths.ForPage(repository.Root, "decks/my.pptx", sha, 3), preview);
+    }
+
+    [Fact]
+    public void ReusesCachedPage()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+        var sha = repository.ResolveCommit("HEAD");
+        var cached = PreviewPaths.ForPage(repository.Root, "decks/my.pptx", sha, 2);
+        Directory.CreateDirectory(Path.GetDirectoryName(cached)!);
+        File.WriteAllText(cached, "already rendered");
+
+        var preview = Assert.Single(CommitPreviews.RenderPages(repository, "decks/my.pptx", deckPath, sha, new PageRange(2, 2)));
+
+        Assert.Equal(cached, preview);
+        Assert.Equal("already rendered", File.ReadAllText(cached));
+    }
+
+    [Fact]
+    public void CompareStitchesARange()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+        var sha = repository.ResolveCommit("HEAD");
+
+        var preview = CommitPreviews.RenderForCompare(repository, "decks/my.pptx", deckPath, sha, new PageRange(2, 25));
+
+        Assert.Equal(PreviewPaths.ForPages(repository.Root, "decks/my.pptx", sha, new PageRange(2, 3)), preview);
+        Assert.Equal(2 * (SlideStitcher.BandHeight + SlideHeight), RgbaImage.LoadPng(preview).Height);
+    }
+
+    [Fact]
+    public void CompareOfOnePageUsesThePageFile()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+
+        var preview = CommitPreviews.RenderForCompare(repository, "decks/my.pptx", deckPath, PreviewPaths.WorkingCopy, new PageRange(40, 50));
+
+        Assert.Equal(PreviewPaths.ForPage(repository.Root, "decks/my.pptx", PreviewPaths.WorkingCopy, 3), preview);
+        Assert.Equal(SlideHeight, RgbaImage.LoadPng(preview).Height);
+    }
+
+    [Fact]
     public void DeckMissingFromCommitFails()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);

@@ -23,4 +23,25 @@ public class SlideSplitterTests
             Assert.Single(presentationPart.SlideParts);
         }
     }
+
+    [Fact]
+    public void SplitsOnlyTheGivenSlides()
+    {
+        using var folder = new TestFolder();
+
+        var copies = SlideSplitter.Split(TestFolder.ThreeSlideDeck, folder.Path, [2, 3]);
+
+        Assert.Equal(["slide0002.pptx", "slide0003.pptx"], copies.Select(Path.GetFileName));
+        using var deck = PresentationDocument.Open(copies[0], false);
+        var presentationPart = deck.PresentationPart!;
+        var slideId = Assert.Single(presentationPart.Presentation!.SlideIdList!.Elements<SlideId>());
+        var slide = (SlidePart)presentationPart.GetPartById(slideId.RelationshipId!);
+        Assert.Contains("Slide 2", slide.Slide!.InnerText);
+    }
+
+    [Fact]
+    public void CountsSlides()
+    {
+        Assert.Equal(3, SlideSplitter.CountSlides(TestFolder.ThreeSlideDeck));
+    }
 }

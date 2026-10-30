@@ -30,6 +30,9 @@ CreatePowerpointCheckpoint file.pptx --commit sha1,sha2,sha3  # render these com
 CreatePowerpointCheckpoint file.pptx --compare                # working copy vs last commit that changed the file
 CreatePowerpointCheckpoint file.pptx --compare sha1           # working copy vs sha1
 CreatePowerpointCheckpoint file.pptx --compare sha1 sha2      # sha1 vs sha2
+CreatePowerpointCheckpoint file.pptx --pages 40               # only slide 40, past the end means the last slide
+CreatePowerpointCheckpoint file.pptx --pages 2-25             # only slides 2 to 25, one PNG per slide
+CreatePowerpointCheckpoint file.pptx --compare --pages 2-25   # compare only those slides, stitched into one PNG per version
 CreatePowerpointCheckpoint --reset                            # clear local settings
 ```
 

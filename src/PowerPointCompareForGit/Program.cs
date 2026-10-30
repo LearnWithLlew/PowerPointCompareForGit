@@ -59,8 +59,12 @@ public static class Program
         var relativePath = repository.RelativePath(deckPath);
         var (left, right) = ComparePlan.Choose(repository, relativePath, request.CompareShas);
 
-        var leftPreview = CommitPreviews.Render(repository, relativePath, deckPath, left);
-        var rightPreview = CommitPreviews.Render(repository, relativePath, deckPath, right);
+        string RenderVersion(string version) => request.Pages is { } pages
+            ? CommitPreviews.RenderForCompare(repository, relativePath, deckPath, version, pages)
+            : CommitPreviews.Render(repository, relativePath, deckPath, version);
+
+        var leftPreview = RenderVersion(left);
+        var rightPreview = RenderVersion(right);
         Console.WriteLine(leftPreview);
         Console.WriteLine(rightPreview);
 
@@ -69,26 +73,34 @@ public static class Program
     }
 
     // --commit renders each listed commit; with no flags, the last commit that changed the deck.
+    // --pages renders those pages of each commit, as one PNG per page.
     private static IEnumerable<string> RenderRequestedCommits(Request request)
     {
         var deckPath = request.File!;
         var repository = GitRepository.Containing(deckPath);
         var relativePath = repository.RelativePath(deckPath);
 
+        IEnumerable<string> RenderCommit(string sha) => request.Pages is { } pages
+            ? CommitPreviews.RenderPages(repository, relativePath, deckPath, sha, pages)
+            : [CommitPreviews.Render(repository, relativePath, sha)];
+
         if (request.Commits.Count > 0)
         {
             // Resolve every commit before rendering any, so a typo fails fast.
             var commits = request.Commits.Select(repository.ResolveCommit).ToList();
-            foreach (var commit in commits)
+            foreach (var preview in commits.SelectMany(RenderCommit))
             {
-                yield return CommitPreviews.Render(repository, relativePath, commit);
+                yield return preview;
             }
 
             yield break;
         }
 
-        var sha = repository.LastCommitThatChanged(relativePath)
+        var lastChange = repository.LastCommitThatChanged(relativePath)
             ?? throw new InvalidOperationException($"{relativePath} has not been committed yet.");
-        yield return CommitPreviews.Render(repository, relativePath, sha);
+        foreach (var preview in RenderCommit(lastChange))
+        {
+            yield return preview;
+        }
     }
 }
