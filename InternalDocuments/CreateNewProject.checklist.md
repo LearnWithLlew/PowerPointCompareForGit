@@ -14,7 +14,7 @@
 ## Tests
 1. [x] xunit test project in the solution
 1. [x] Extract logic out of `Program` into testable classes
-1. [ ] Record known gaps as named passing tests, with TODOs to flip them
+1. [x] Record known gaps as named passing tests, with TODOs to flip them
 
 ## Build and CI
 1. [ ] `build_and_test.sh` and `build_and_test.cmd`

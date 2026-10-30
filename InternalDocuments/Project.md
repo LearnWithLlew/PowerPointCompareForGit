@@ -117,3 +117,5 @@ Tracked in [CreateNewProject.checklist.md](CreateNewProject.checklist.md).
 
 1. Verify the diff-tool executable names and install paths in the Diff tool table.
 1. Verify the LibreOffice install paths and the brew/winget package names.
+1. Deck folders whose names start with `..` (e.g. `..decks/`) are rejected as outside the repo. Flip `KnownGap_FolderStartingWithDotDotIsRejected` in `PreviewPathsTests` when fixed.
+1. In git worktrees and submodules `.git` is a file, not a folder, so the preview cache path is wrong. Use `git rev-parse --git-dir` instead. Flip `KnownGap_WorktreeGitFileIsTreatedAsFolder` in `PreviewPathsTests` when fixed.
