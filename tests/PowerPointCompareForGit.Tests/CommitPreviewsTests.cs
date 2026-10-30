@@ -47,4 +47,21 @@ public class CommitPreviewsTests
         var error = Assert.Throws<InvalidOperationException>(() => CommitPreviews.Render(repository, "decks/other.pptx", sha));
         Assert.Equal($"decks/other.pptx does not exist in commit {sha[..7]}.", error.Message);
     }
+
+    [Fact]
+    public void WorkingCopyIsRenderedFromDiskEveryTime()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+        SlideSplitter.Split(TestFolder.ThreeSlideDeck, folder.Path);
+        File.Copy(folder.Combine("slide0001.pptx"), deckPath, overwrite: true);
+        var stale = PreviewPaths.For(repository.Root, "decks/my.pptx", PreviewPaths.WorkingCopy);
+        Directory.CreateDirectory(Path.GetDirectoryName(stale)!);
+        File.WriteAllText(stale, "stale");
+
+        var preview = CommitPreviews.RenderWorkingCopy(repository, "decks/my.pptx", deckPath);
+
+        Assert.Equal(stale, preview);
+        Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(preview).Height);
+    }
 }

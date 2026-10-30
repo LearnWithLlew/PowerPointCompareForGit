@@ -10,15 +10,20 @@ public static class Program
             var request = CommandLineArguments.ToRequest(parseResult);
             try
             {
-                if (request.Reset || request.Compare)
+                if (request.Reset)
                 {
-                    Console.Error.WriteLine("Not implemented yet: --reset and --compare.");
-                    return 1;
+                    Reset(Settings.DefaultPath());
                 }
-
-                foreach (var previewPath in RenderRequestedCommits(request))
+                else if (request.Compare)
                 {
-                    Console.WriteLine(previewPath);
+                    Compare(request);
+                }
+                else
+                {
+                    foreach (var previewPath in RenderRequestedCommits(request))
+                    {
+                        Console.WriteLine(previewPath);
+                    }
                 }
 
                 return 0;
@@ -31,6 +36,36 @@ public static class Program
         });
 
         return rootCommand.Parse(args).Invoke();
+    }
+
+    private static void Reset(string settingsPath)
+    {
+        if (File.Exists(settingsPath))
+        {
+            File.Delete(settingsPath);
+            Console.WriteLine($"Deleted {settingsPath}");
+        }
+        else
+        {
+            Console.WriteLine($"No settings to delete ({settingsPath} does not exist).");
+        }
+    }
+
+    // Renders both versions, prints their paths (older first) and opens them in the diff tool.
+    private static void Compare(Request request)
+    {
+        var deckPath = request.File!;
+        var repository = GitRepository.Containing(deckPath);
+        var relativePath = repository.RelativePath(deckPath);
+        var (left, right) = ComparePlan.Choose(repository, relativePath, request.CompareShas);
+
+        var leftPreview = CommitPreviews.Render(repository, relativePath, deckPath, left);
+        var rightPreview = CommitPreviews.Render(repository, relativePath, deckPath, right);
+        Console.WriteLine(leftPreview);
+        Console.WriteLine(rightPreview);
+
+        var diffTool = DiffToolSetup.Resolve(Settings.DefaultPath(), DiffTools.Detect(), Console.In, Console.Out, Console.IsInputRedirected);
+        DiffTools.Launch(diffTool, leftPreview, rightPreview);
     }
 
     // --commit renders each listed commit; with no flags, the last commit that changed the deck.

@@ -33,11 +33,16 @@ internal sealed class GitRepository
         return prefix + Path.GetFileName(path);
     }
 
-    internal string? LastCommitThatChanged(string relativePath)
-    {
-        var sha = Run("log", "-1", "--format=%H", "--", relativePath).OutputText;
-        return sha.Length == 0 ? null : sha;
-    }
+    internal string? LastCommitThatChanged(string relativePath) => LastCommitsThatChanged(relativePath, 1).FirstOrDefault();
+
+    // Newest first.
+    internal IReadOnlyList<string> LastCommitsThatChanged(string relativePath, int count)
+        => Run("log", $"-{count}", "--format=%H", "--", relativePath).OutputText
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    // True when the file on disk differs from HEAD, including when it is untracked.
+    internal bool HasUncommittedChanges(string relativePath)
+        => Run("status", "--porcelain", "--", relativePath).OutputText.Length > 0;
 
     // Turns a sha, short sha, tag or branch into the full commit sha.
     internal string ResolveCommit(string revision)

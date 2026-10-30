@@ -16,7 +16,7 @@ internal static class CommitPreviews
             throw new InvalidOperationException($"{relativePath} does not exist in commit {sha[..7]}.");
         }
 
-        var soffice = LibreOffice.Find() ?? throw new InvalidOperationException(LibreOffice.NotFoundMessage());
+        var soffice = FindLibreOffice();
         var work = Directory.CreateTempSubdirectory("pptx-extract-");
         try
         {
@@ -31,4 +31,27 @@ internal static class CommitPreviews
 
         return previewPath;
     }
+
+    // Renders the deck as it is on disk. Never cached: it is re-rendered on every run.
+    internal static string RenderWorkingCopy(GitRepository repository, string relativePath, string deckPath)
+    {
+        if (!File.Exists(deckPath))
+        {
+            throw new FileNotFoundException($"{deckPath} does not exist.");
+        }
+
+        var previewPath = PreviewPaths.For(repository.Root, relativePath, PreviewPaths.WorkingCopy);
+        DeckRenderer.Render(FindLibreOffice(), deckPath, previewPath);
+        return previewPath;
+    }
+
+    // version is a commit sha or PreviewPaths.WorkingCopy.
+    internal static string Render(GitRepository repository, string relativePath, string deckPath, string version)
+        => version == PreviewPaths.WorkingCopy
+            ? RenderWorkingCopy(repository, relativePath, deckPath)
+            : Render(repository, relativePath, version);
+
+    private static string FindLibreOffice()
+        => LibreOffice.Find(Settings.Load(Settings.DefaultPath()).LibreOfficePath)
+            ?? throw new InvalidOperationException(LibreOffice.NotFoundMessage());
 }

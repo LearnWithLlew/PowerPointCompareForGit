@@ -8,8 +8,14 @@ internal static class LibreOffice
         @"C:\Program Files\LibreOffice\program\soffice.exe"
     ];
 
-    internal static string? Find()
+    // configuredPath is the libreOfficePath setting, used first when it points at a file.
+    internal static string? Find(string? configuredPath = null)
     {
+        if (configuredPath is not null && File.Exists(configuredPath))
+        {
+            return configuredPath;
+        }
+
         var names = OperatingSystem.IsWindows() ? new[] { "soffice.exe", "soffice.com" } : ["soffice"];
         var onPath = (Environment.GetEnvironmentVariable("PATH") ?? "")
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
@@ -23,7 +29,7 @@ internal static class LibreOffice
         var install = OperatingSystem.IsMacOS() ? "brew install --cask libreoffice"
             : OperatingSystem.IsWindows() ? "winget install TheDocumentFoundation.LibreOffice"
             : "sudo apt install libreoffice";
-        return $"LibreOffice was not found. Install it with: {install}";
+        return $"LibreOffice was not found. Install it with: {install} (or set \"libreOfficePath\" in {Settings.DefaultPath()}).";
     }
 
     // Converts every file to PNG in a single launch.
