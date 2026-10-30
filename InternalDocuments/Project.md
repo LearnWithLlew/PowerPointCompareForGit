@@ -88,6 +88,7 @@ Note: executable names and install paths above are unverified; confirm before im
 
 ## Platform
 Targets `net10.0` (current LTS), with `global.json` pinning SDK `10.0.402`, matching SafeQuery.
+Argument parsing uses `System.CommandLine`, matching SafeQuery.
 
 ## Naming
 - Repo, solution, project and NuGet package ID: `PowerPointCompareForGit`.

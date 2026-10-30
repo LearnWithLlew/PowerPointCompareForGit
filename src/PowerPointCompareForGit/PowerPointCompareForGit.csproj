@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="PowerPointCompareForGit.Tests" />
   </ItemGroup>
 
