@@ -1,9 +1,9 @@
 # Create New Project Checklist
 
 ## Repo scaffolding
-1. [ ] `.gitattributes`, `.gitignore`, `.editorconfig`
-1. [ ] `LICENSE` and `NOTICE`
-1. [ ] `AGENTS.md` with working rules
+1. [x] `.gitattributes`, `.gitignore`, `.editorconfig`
+1. [x] `LICENSE` and `NOTICE`
+1. [x] `AGENTS.md` with working rules
 1. [ ] `InternalDocuments/project.md` spec: decisions, structure, release checklist, TODOs
 1. [ ] `tools/create_message.py` commit message script, documented in `AGENTS.md`
 1. [ ] Solution file (`.slnx`)
