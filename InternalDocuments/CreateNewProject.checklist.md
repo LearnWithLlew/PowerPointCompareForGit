@@ -23,7 +23,7 @@
 1. [x] Markdown link check workflow
 1. [x] Dependabot for NuGet and GitHub Actions
 1. [x] CI uses `global.json`
-1. [ ] Claim OpenSource sponsorship exemption
+1. [x] ~~Claim OpenSource sponsorship exemption~~ (N/A: no Papyrine/Naiad dependency)
 
 ## Packaging
 1. [ ] Package metadata: ID, description, license, repository URL
