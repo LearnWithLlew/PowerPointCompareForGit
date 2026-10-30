@@ -7,7 +7,7 @@ description: See what changed in a PowerPoint (.pptx) deck across git commits by
 
 `CreatePowerpointCheckpoint` renders each version of a `.pptx` in a git repo to a single tall PNG (all slides stacked) and opens two versions side by side in the user's diff tool.
 
-> **Status:** early development. Only `CreatePowerpointCheckpoint deck.pptx` (render the last commit that changed the deck) works. `--commit`, `--compare` and `--reset` exit 1 with "Not implemented yet"; tell the user rather than retrying.
+> **Status:** early development. Rendering works (`CreatePowerpointCheckpoint deck.pptx` and `--commit`). `--compare` and `--reset` exit 1 with "Not implemented yet"; tell the user rather than retrying.
 
 ## Setup
 

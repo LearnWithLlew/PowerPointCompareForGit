@@ -11,6 +11,11 @@ internal sealed class GitRepository
 
     internal static GitRepository Containing(string path)
     {
+        if (!Directory.Exists(DirectoryOf(path)))
+        {
+            throw new DirectoryNotFoundException($"{DirectoryOf(path)} does not exist.");
+        }
+
         var result = ProcessRunner.Run("git", ["rev-parse", "--show-toplevel"], DirectoryOf(path));
         if (result.ExitCode != 0)
         {
@@ -33,6 +38,16 @@ internal sealed class GitRepository
         var sha = Run("log", "-1", "--format=%H", "--", relativePath).OutputText;
         return sha.Length == 0 ? null : sha;
     }
+
+    // Turns a sha, short sha, tag or branch into the full commit sha.
+    internal string ResolveCommit(string revision)
+    {
+        var result = ProcessRunner.Run("git", ["rev-parse", "--verify", "--quiet", $"{revision}^{{commit}}"], Root);
+        return result.ExitCode == 0 ? result.OutputText : throw new InvalidOperationException($"{revision} is not a commit in this repository.");
+    }
+
+    internal bool FileExistsAt(string sha, string relativePath)
+        => ProcessRunner.Run("git", ["cat-file", "-e", $"{sha}:{relativePath}"], Root).ExitCode == 0;
 
     internal void ExtractFile(string sha, string relativePath, string destination)
         => File.WriteAllBytes(destination, Run("show", $"{sha}:{relativePath}").Output);

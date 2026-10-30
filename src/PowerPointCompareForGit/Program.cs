@@ -10,13 +10,17 @@ public static class Program
             var request = CommandLineArguments.ToRequest(parseResult);
             try
             {
-                if (request.Reset || request.Compare || request.Commits.Count > 0)
+                if (request.Reset || request.Compare)
                 {
-                    Console.Error.WriteLine("Not implemented yet: --reset, --compare and --commit.");
+                    Console.Error.WriteLine("Not implemented yet: --reset and --compare.");
                     return 1;
                 }
 
-                Console.WriteLine(RenderLastCommit(request.File!));
+                foreach (var previewPath in RenderRequestedCommits(request))
+                {
+                    Console.WriteLine(previewPath);
+                }
+
                 return 0;
             }
             catch (Exception ex)
@@ -29,38 +33,27 @@ public static class Program
         return rootCommand.Parse(args).Invoke();
     }
 
-    // Renders the last commit that changed the deck (or reuses the cached preview) and returns the PNG path.
-    private static string RenderLastCommit(string deckPath)
+    // --commit renders each listed commit; with no flags, the last commit that changed the deck.
+    private static IEnumerable<string> RenderRequestedCommits(Request request)
     {
-        if (!File.Exists(deckPath))
-        {
-            throw new FileNotFoundException($"{deckPath} does not exist.");
-        }
-
+        var deckPath = request.File!;
         var repository = GitRepository.Containing(deckPath);
         var relativePath = repository.RelativePath(deckPath);
+
+        if (request.Commits.Count > 0)
+        {
+            // Resolve every commit before rendering any, so a typo fails fast.
+            var commits = request.Commits.Select(repository.ResolveCommit).ToList();
+            foreach (var commit in commits)
+            {
+                yield return CommitPreviews.Render(repository, relativePath, commit);
+            }
+
+            yield break;
+        }
+
         var sha = repository.LastCommitThatChanged(relativePath)
             ?? throw new InvalidOperationException($"{relativePath} has not been committed yet.");
-
-        var previewPath = PreviewPaths.For(repository.Root, relativePath, sha);
-        if (File.Exists(previewPath))
-        {
-            return previewPath;
-        }
-
-        var soffice = LibreOffice.Find() ?? throw new InvalidOperationException(LibreOffice.NotFoundMessage());
-        var work = Directory.CreateTempSubdirectory("pptx-extract-");
-        try
-        {
-            var deckCopy = Path.Combine(work.FullName, Path.GetFileName(relativePath));
-            repository.ExtractFile(sha, relativePath, deckCopy);
-            DeckRenderer.Render(soffice, deckCopy, previewPath);
-        }
-        finally
-        {
-            work.Delete(recursive: true);
-        }
-
-        return previewPath;
+        yield return CommitPreviews.Render(repository, relativePath, sha);
     }
 }
