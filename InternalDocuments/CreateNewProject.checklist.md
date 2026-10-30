@@ -26,7 +26,7 @@
 1. [x] ~~Claim OpenSource sponsorship exemption~~ (N/A: no Papyrine/Naiad dependency)
 
 ## Packaging
-1. [ ] Package metadata: ID, description, license, repository URL
+1. [x] Package metadata: ID, description, license, repository URL
 1. [ ] Version comes from the release tag, not the csproj
 1. [ ] Package icon
 1. [ ] Native assets for every target OS
