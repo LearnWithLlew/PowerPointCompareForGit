@@ -6,7 +6,7 @@
 1. [x] `AGENTS.md` with working rules
 1. [x] `InternalDocuments/project.md` spec: decisions, structure, release checklist, TODOs
 1. [x] `tools/create_message.py` commit message script, documented in `AGENTS.md`
-1. [ ] Solution file (`.slnx`)
+1. [x] Solution file (`.slnx`)
 1. [ ] `global.json` pinning the SDK
 1. [ ] Central package management (`Directory.Packages.props`)
 1. [ ] Project skills in `.claude/skills/` (e.g. C# style)
