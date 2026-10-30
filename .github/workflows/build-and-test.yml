@@ -1,0 +1,22 @@
+name: build-and-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '14 7 * * 0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: ./build_and_test.sh
+      - run: dotnet pack src/PowerPointCompareForGit -c Release --no-build -o artifacts -p:Version=0.0.0-ci.${{ github.run_number }}
