@@ -7,6 +7,8 @@ internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool
 
 internal static class CommandLineArguments
 {
+    internal const string AgentSkillUrl = "https://github.com/LearnWithLlew/PowerPointCompareForGit/blob/main/skills/powerpoint-compare/SKILL.md";
+
     private static readonly Argument<string?> FileArgument = new("file")
     {
         Description = "The .pptx file.",
@@ -34,7 +36,11 @@ internal static class CommandLineArguments
 
     internal static RootCommand CreateRootCommand()
     {
-        var rootCommand = new RootCommand("Render PowerPoint decks from git history to PNG and compare them.")
+        var rootCommand = new RootCommand($"""
+            Render PowerPoint decks from git history to PNG and compare them.
+
+            AI agents: see {AgentSkillUrl}
+            """)
         {
             FileArgument, CommitOption, CompareOption, ResetOption
         };

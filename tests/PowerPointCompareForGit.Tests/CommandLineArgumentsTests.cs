@@ -82,4 +82,13 @@ public class CommandLineArgumentsTests
     {
         Assert.NotEmpty(Errors("deck.pptx", "--compare", "sha1", "sha2", "sha3"));
     }
+
+    [Fact]
+    public void HelpLinksToAgentSkill()
+    {
+        var output = new StringWriter();
+        CommandLineArguments.CreateRootCommand().Parse("--help").Invoke(new() { Output = output });
+
+        Assert.Contains($"AI agents: see {CommandLineArguments.AgentSkillUrl}", output.ToString());
+    }
 }
