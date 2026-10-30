@@ -10,6 +10,8 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>CreatePowerpointCheckpoint</ToolCommandName>
     <PackageId>PowerPointCompareForGit</PackageId>
+    <!-- Real versions come from the release tag (publish.yml passes -p:Version); this is only for local builds. -->
+    <Version>0.0.0-dev</Version>
     <Authors>Llewellyn Falco</Authors>
     <Description>Render PowerPoint decks from git history to PNG and compare versions in your diff tool.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

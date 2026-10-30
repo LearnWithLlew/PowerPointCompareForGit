@@ -27,13 +27,13 @@
 
 ## Packaging
 1. [x] Package metadata: ID, description, license, repository URL
-1. [ ] Version comes from the release tag, not the csproj
+1. [x] Version comes from the release tag, not the csproj
 1. [ ] Package icon
 1. [ ] Native assets for every target OS
 1. [ ] Check the package ID is free on nuget.org
 
 ## Publishing
-1. [ ] Publish workflow on GitHub release
+1. [x] Publish workflow on GitHub release
 1. [ ] NuGet trusted publishing policy (owner, repo, workflow file, package glob)
 1. [ ] `NUGET_USER` repo secret
 1. [ ] Cut first release and confirm the publish run with `gh`
