@@ -35,8 +35,8 @@
 ## Publishing
 1. [x] Publish workflow on GitHub release
 1. [x] NuGet trusted publishing policy (owner, repo, workflow file, package glob)
-1. [ ] `NUGET_USER` repo secret
-1. [ ] Cut first release and confirm the publish run with `gh`
+1. [x] `NUGET_USER` repo secret
+1. [x] Cut first release and confirm the publish run with `gh` (v0.1.0, run 41004950526)
 
 ## README
 1. [x] Build and NuGet badges
