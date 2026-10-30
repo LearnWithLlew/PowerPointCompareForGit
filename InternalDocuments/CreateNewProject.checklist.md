@@ -39,5 +39,5 @@
 1. [ ] Cut first release and confirm the publish run with `gh`
 
 ## README
-1. [ ] Build and NuGet badges
-1. [ ] Install and usage docs
+1. [x] Build and NuGet badges
+1. [x] Install and usage docs
