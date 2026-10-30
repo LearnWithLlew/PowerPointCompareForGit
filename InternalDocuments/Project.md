@@ -24,11 +24,17 @@ With `--compare`, it renders both versions (if needed) and opens them in the con
 The tool never creates commits. Uncommitted edits are rendered directly from the file on disk to `my.pptx.working.png` (in the same folder as the cached previews), which is overwritten each run.
 
 ## Rendering
-Uses LibreOffice in headless mode: `soffice --headless --convert-to pdf`, then rasterizes each page and stitches them vertically into one long PNG.
+Uses LibreOffice in headless mode, with no native code in our own package:
+1. Split the deck into one single-slide `.pptx` per slide with `DocumentFormat.OpenXml` (managed, MIT).
+1. Convert all of them to PNG in a single launch: `soffice --headless --convert-to png --outdir <tmp> slide1.pptx slide2.pptx ...`
+1. Stitch the PNGs vertically into one long PNG with `SixLabors.ImageSharp` (managed; Six Labors Split License, free for open source).
+
 - Free and cross-platform (Mac/Windows/Linux), works in CI.
-- Requires LibreOffice to be installed.
-- PDF pages are rasterized with the `PDFtoImage` NuGet package (PDFium, MIT) and stitched with SkiaSharp, so LibreOffice is the only external dependency.
+- Requires LibreOffice to be installed; it is the only external dependency.
 - Accepted tradeoff: rendering is not pixel-identical to PowerPoint.
+- Why not `--convert-to png` with a `PageRange` filter option: LibreOffice 25.2 ignores `PageRange` and `PixelWidth` and always exports slide 1 at its default size.
+- Why not PDF + PDFtoImage/SkiaSharp: it would ship native assets per OS.
+- Measured: a 3-slide deck converted in one launch in 1.78 s (LibreOffice 25.2, Mac).
 
 ### Layout
 - Each slide is rendered 1280px wide; height follows the deck's aspect ratio (16:9 → 1280×720, 4:3 → 1280×960, any custom size scales the same way).
@@ -119,3 +125,4 @@ Tracked in [CreateNewProject.checklist.md](CreateNewProject.checklist.md).
 1. Verify the LibreOffice install paths and the brew/winget package names.
 1. Deck folders whose names start with `..` (e.g. `..decks/`) are rejected as outside the repo. Flip `KnownGap_FolderStartingWithDotDotIsRejected` in `PreviewPathsTests` when fixed.
 1. In git worktrees and submodules `.git` is a file, not a folder, so the preview cache path is wrong. Use `git rev-parse --git-dir` instead. Flip `KnownGap_WorktreeGitFileIsTreatedAsFolder` in `PreviewPathsTests` when fixed.
+1. Verify the OpenXml slide split keeps each slide's layout, master and media (test with a real deck with images and custom layouts).
