@@ -74,6 +74,8 @@ Previews are cached inside the repo's `.git/` folder, so git never tracks them a
 - `working.png` is overwritten each run.
 
 ## Settings
+Prompts (diff tool, LibreOffice install) go to stderr, so stdout stays a clean list of PNG paths.
+
 Stored in `~/.createpowerpointcheckpoint/settings.json` (same pattern as SafeQuery's `~/.safequery/settings.json`).
 - One global setting per user, not per repo.
 - `--reset` deletes the file.
@@ -124,7 +126,7 @@ Tracked in [CreateNewProject.checklist.md](CreateNewProject.checklist.md).
 
 ## TODO
 
-1. Verify the diff-tool executable names and install paths in the Diff tool table.
+1. Verify the diff-tool executable names and install paths in the Diff tool table (Beyond Compare on Mac verified 2026-10-30). Araxis is only looked up at its install path, because ImageMagick also installs a `compare` command.
 1. Verify the LibreOffice install paths and the brew/winget package names.
 1. Deck folders whose names start with `..` (e.g. `..decks/`) are rejected as outside the repo. Flip `KnownGap_FolderStartingWithDotDotIsRejected` in `PreviewPathsTests` when fixed.
 1. In git worktrees and submodules `.git` is a file, not a folder, so the preview cache path is wrong. Use `git rev-parse --git-dir` instead. Flip `KnownGap_WorktreeGitFileIsTreatedAsFolder` in `PreviewPathsTests` when fixed.

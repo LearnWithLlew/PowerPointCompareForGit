@@ -64,7 +64,7 @@ public static class Program
         Console.WriteLine(leftPreview);
         Console.WriteLine(rightPreview);
 
-        var diffTool = DiffToolSetup.Resolve(Settings.DefaultPath(), DiffTools.Detect(), Console.In, Console.Out, Console.IsInputRedirected);
+        var diffTool = DiffToolSetup.Resolve(Settings.DefaultPath(), DiffTools.Detect(), Console.In, Console.Error, Console.IsInputRedirected);
         DiffTools.Launch(diffTool, leftPreview, rightPreview);
     }
 

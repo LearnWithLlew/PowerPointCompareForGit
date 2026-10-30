@@ -51,7 +51,16 @@ internal static class CommitPreviews
             ? RenderWorkingCopy(repository, relativePath, deckPath)
             : Render(repository, relativePath, version);
 
+    // Prompts go to stderr so stdout stays a clean list of PNG paths.
     private static string FindLibreOffice()
-        => LibreOffice.Find(Settings.Load(Settings.DefaultPath()).LibreOfficePath)
-            ?? throw new InvalidOperationException(LibreOffice.NotFoundMessage());
+    {
+        var configuredPath = Settings.Load(Settings.DefaultPath()).LibreOfficePath;
+        return LibreOfficeSetup.Resolve(
+            () => LibreOffice.Find(configuredPath),
+            LibreOfficeSetup.InstallerForThisOs(),
+            Console.In,
+            Console.Error,
+            Console.IsInputRedirected,
+            LibreOfficeSetup.RunInstaller);
+    }
 }

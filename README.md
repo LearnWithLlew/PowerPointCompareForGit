@@ -6,7 +6,7 @@
 
 A .NET tool that shows what changed in a PowerPoint deck across git commits. It renders each version of a `.pptx` to a single tall PNG (all slides stacked) and opens two versions side by side in your diff tool.
 
-> **Status:** early development. Rendering, `--commit`, `--compare` and `--reset` work. The LibreOffice install prompt is not implemented yet (it prints the install command instead).
+> **Status:** early development. All commands work; the detected diff-tool commands are not yet verified on every OS.
 
 ## Install
 
