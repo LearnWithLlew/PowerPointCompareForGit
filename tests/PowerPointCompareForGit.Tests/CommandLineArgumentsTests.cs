@@ -84,6 +84,24 @@ public class CommandLineArgumentsTests
     }
 
     [Fact]
+    public void RendererDefaultsToLibreOffice()
+    {
+        Assert.Equal(Renderer.LibreOffice, Parse("deck.pptx").Renderer);
+    }
+
+    [Fact]
+    public void RendererIsCaseInsensitive()
+    {
+        Assert.Equal(Renderer.DeckCraft, Parse("deck.pptx", "--renderer", "deckcraft").Renderer);
+    }
+
+    [Fact]
+    public void UnknownRendererIsRejected()
+    {
+        Assert.NotEmpty(Errors("deck.pptx", "--renderer", "powerpoint"));
+    }
+
+    [Fact]
     public void ResetNeedsNoFile()
     {
         var request = Parse("--reset");

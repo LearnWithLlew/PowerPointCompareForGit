@@ -60,8 +60,8 @@ public static class Program
         var (left, right) = ComparePlan.Choose(repository, relativePath, request.CompareShas);
 
         string RenderVersion(string version) => request.Pages is { } pages
-            ? CommitPreviews.RenderForCompare(repository, relativePath, deckPath, version, pages)
-            : CommitPreviews.Render(repository, relativePath, deckPath, version);
+            ? CommitPreviews.RenderForCompare(repository, relativePath, deckPath, version, pages, request.Renderer)
+            : CommitPreviews.Render(repository, relativePath, deckPath, version, request.Renderer);
 
         var leftPreview = RenderVersion(left);
         var rightPreview = RenderVersion(right);
@@ -81,8 +81,8 @@ public static class Program
         var relativePath = repository.RelativePath(deckPath);
 
         IEnumerable<string> RenderCommit(string sha) => request.Pages is { } pages
-            ? CommitPreviews.RenderPages(repository, relativePath, deckPath, sha, pages)
-            : [CommitPreviews.Render(repository, relativePath, sha)];
+            ? CommitPreviews.RenderPages(repository, relativePath, deckPath, sha, pages, request.Renderer)
+            : [CommitPreviews.Render(repository, relativePath, sha, request.Renderer)];
 
         if (request.Commits.Count > 0)
         {

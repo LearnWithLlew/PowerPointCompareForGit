@@ -40,6 +40,14 @@ public class PreviewPathsTests
     }
 
     [Fact]
+    public void OtherRenderersGetTheirOwnFiles()
+    {
+        Assert.Equal(Expected("decks", "my.pptx.0123456.deckcraft.png"), PreviewPaths.For(RepoRoot, "decks/my.pptx", "0123456789abcdef", Renderer.DeckCraft));
+        Assert.Equal(Expected("decks", "my.pptx.working.deckcraft.page.1.png"), PreviewPaths.ForPage(RepoRoot, "decks/my.pptx", PreviewPaths.WorkingCopy, 1, Renderer.DeckCraft));
+        Assert.Equal(Expected("decks", "my.pptx.0123456.deckcraft.pages.2-25.png"), PreviewPaths.ForPages(RepoRoot, "decks/my.pptx", "0123456789abcdef", new PageRange(2, 25), Renderer.DeckCraft));
+    }
+
+    [Fact]
     public void DeckAtRepoRootHasNoSubfolder()
     {
         var path = PreviewPaths.For(RepoRoot, "my.pptx", "0123456789abcdef");

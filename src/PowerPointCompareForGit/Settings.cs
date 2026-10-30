@@ -3,9 +3,9 @@
 namespace PowerPointCompareForGit;
 
 // ~/.createpowerpointcheckpoint/settings.json
-internal sealed record Settings(string? DiffTool = null, string? LibreOfficePath = null)
+internal sealed record Settings(string? DiffTool = null, string? LibreOfficePath = null, string? DeckCraftCliPath = null)
 {
-    // Saved as camelCase ("diffTool", "libreOfficePath"); read case-insensitively so hand edits in either case work.
+    // Saved as camelCase ("diffTool", "libreOfficePath", "deckCraftCliPath"); read case-insensitively so hand edits in either case work.
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,

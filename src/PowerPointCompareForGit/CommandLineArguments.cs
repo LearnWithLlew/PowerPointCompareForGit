@@ -4,7 +4,7 @@ namespace PowerPointCompareForGit;
 
 // What the user asked for. Compare is true for --compare, with 0, 1 or 2 shas in CompareShas.
 // Pages is null when the whole deck is wanted.
-internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool Compare, IReadOnlyList<string> CompareShas, PageRange? Pages, bool Reset);
+internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool Compare, IReadOnlyList<string> CompareShas, PageRange? Pages, Renderer Renderer, bool Reset);
 
 internal static class CommandLineArguments
 {
@@ -36,6 +36,12 @@ internal static class CommandLineArguments
         HelpName = "pages"
     };
 
+    private static readonly Option<Renderer> RendererOption = new("--renderer")
+    {
+        Description = "What draws the slides: LibreOffice (the default) or DeckCraft.",
+        HelpName = "renderer"
+    };
+
     private static readonly Option<bool> ResetOption = new("--reset")
     {
         Description = "Clear local settings."
@@ -49,7 +55,7 @@ internal static class CommandLineArguments
             AI agents: see {AgentSkillUrl}
             """)
         {
-            FileArgument, CommitOption, CompareOption, PagesOption, ResetOption
+            FileArgument, CommitOption, CompareOption, PagesOption, RendererOption, ResetOption
         };
         rootCommand.Validators.Add(result =>
         {
@@ -85,6 +91,7 @@ internal static class CommandLineArguments
             parseResult.GetResult(CompareOption) is not null,
             parseResult.GetValue(CompareOption) ?? [],
             parseResult.GetValue(PagesOption) is { } pages ? PageRange.Parse(pages) : null,
+            parseResult.GetValue(RendererOption),
             parseResult.GetValue(ResetOption));
     }
 }
