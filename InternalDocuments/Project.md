@@ -37,7 +37,8 @@ Uses LibreOffice in headless mode, with no native code in our own package:
 - Measured: a 3-slide deck converted in one launch in 1.78 s (LibreOffice 25.2, Mac).
 
 ### Layout
-- Each slide is rendered 1280px wide; height follows the deck's aspect ratio (16:9 → 1280×720, 4:3 → 1280×960, any custom size scales the same way).
+- Slides keep LibreOffice's default export size, with no resizing, so text stays sharp (e.g. a 4:3 deck exports at 960×720). Any slide size, including custom ones, is supported; the same deck always renders at the same size, so versions line up in the diff tool.
+- Why not upscale to a fixed width: upscaling blurs text, which hides small changes. Why not enlarge the slide size before export: text and shapes can reflow, so the preview would no longer match the deck.
 - Slides are stacked vertically, separated by a 40px gray band labeled "Slide N".
 - Known limitation: very long decks (~100+ slides) may exceed some diff tools' max image size.
 
