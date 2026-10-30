@@ -39,6 +39,10 @@ Previews are cached in `.git/pptx-previews/`, so git never tracks them and each 
 
 The first `--compare` asks which diff tool to use and suggests any PNG-capable ones it finds (Beyond Compare, Kaleidoscope, P4Merge, Araxis Merge, WinMerge), or a custom command such as `mytool --flags {file1} {file2}`. The answer is saved to `~/.createpowerpointcheckpoint/settings.json`. `--reset` deletes that file.
 
+## For AI agents
+
+[skills/powerpoint-compare/SKILL.md](skills/powerpoint-compare/SKILL.md) is an [Agent Skill](https://agentskills.io) that teaches coding agents how to use this tool. Copy the `powerpoint-compare` folder into your agent's skills directory (e.g. `.claude/skills/`).
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
