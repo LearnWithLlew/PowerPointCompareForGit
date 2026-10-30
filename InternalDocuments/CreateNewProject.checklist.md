@@ -21,7 +21,7 @@
 1. [x] Build and test workflow on push and PR
 1. [x] Tidy code workflow (main only)
 1. [x] Markdown link check workflow
-1. [ ] Dependabot for NuGet and GitHub Actions
+1. [x] Dependabot for NuGet and GitHub Actions
 1. [x] CI uses `global.json`
 1. [ ] Claim OpenSource sponsorship exemption
 
