@@ -31,4 +31,5 @@ Numbered lists in markdown files prefix every item with `1.`, not an incrementin
 
 ## Commit messages
 Use `tools/create-commit-message.sh` to build every commit message in this repo. Run `bash tools/create-commit-message.sh <risk> <intention> "<message>"` and use its stdout as the commit message.
+Pass full names, not character codes. Risk is one of `completely_safe` (`.`), `proven` (`-`), `single_item` (`!`) or `other` (`@`). Intention is one of `environment` (`e`), `test` (`t`), `refactor` (`r`), `feature` (`F`), `bug` (`B`) or `documentation` (`d`). `environment` changes must use `completely_safe`. An unrecognized name or empty message prints an error to stderr and exits non-zero, so fix the arguments and rerun instead of writing the message by hand.
 See `InternalDocuments/commit_notation.md` for what the risk and intention codes mean.
