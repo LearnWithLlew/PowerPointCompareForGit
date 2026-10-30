@@ -12,7 +12,7 @@
 1. [x] Project skills in `.claude/skills/` (e.g. C# style)
 
 ## Tests
-1. [ ] xunit test project in the solution
+1. [x] xunit test project in the solution
 1. [ ] Extract logic out of `Program` into testable classes
 1. [ ] Record known gaps as named passing tests, with TODOs to flip them
 

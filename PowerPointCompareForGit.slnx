@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/PowerPointCompareForGit/PowerPointCompareForGit.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PowerPointCompareForGit.Tests/PowerPointCompareForGit.Tests.csproj" />
+  </Folder>
 </Solution>
