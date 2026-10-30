@@ -94,7 +94,7 @@ Targets `net10.0` (current LTS), with `global.json` pinning SDK `10.0.402`, matc
 - Command name: `CreatePowerpointCheckpoint` (set via `<ToolCommandName>`).
 - License: Apache-2.0.
 
-# Project Structure
+## Project Structure
 
 ```
 PowerPointCompareForGit.slnx
@@ -108,11 +108,11 @@ CI: GitHub Actions
 - build and test (uses the script) on push and PR
 - publish on GitHub release, version from tag (`v1.2.3` becomes `1.2.3`), using nuget.org trusted publishing
 
-# Release Checklist
+## Release Checklist
 
 Tracked in [CreateNewProject.checklist.md](CreateNewProject.checklist.md).
 
-# TODO
+## TODO
 
 1. Verify the diff-tool executable names and install paths in the Diff tool table.
 1. Verify the LibreOffice install paths and the brew/winget package names.
