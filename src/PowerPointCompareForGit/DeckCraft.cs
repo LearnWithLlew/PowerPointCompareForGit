@@ -7,7 +7,13 @@ internal static class DeckCraft
     // deckcraft-cli scales by pixels per point. 4/3 is LibreOffice's default export size, so both line up (a 4:3 deck is 960×720).
     private const double PixelsPerPoint = 4.0 / 3.0;
 
+    private static string CliFileName => OperatingSystem.IsWindows() ? "deckcraft-cli.exe" : "deckcraft-cli";
+
+    // Where DeckCraftSetup installs it, next to the settings file.
+    internal static string InstallFolder() => Path.Combine(Path.GetDirectoryName(Settings.DefaultPath())!, "deckcraft");
+
     // configuredPath is the deckCraftCliPath setting, used first when it points at a file.
+    // Then PATH, then what DeckCraftSetup installed.
     internal static string? Find(string? configuredPath = null)
     {
         if (configuredPath is not null && File.Exists(configuredPath))
@@ -15,15 +21,19 @@ internal static class DeckCraft
             return configuredPath;
         }
 
-        var name = OperatingSystem.IsWindows() ? "deckcraft-cli.exe" : "deckcraft-cli";
-        return (Environment.GetEnvironmentVariable("PATH") ?? "")
+        var onPath = (Environment.GetEnvironmentVariable("PATH") ?? "")
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
-            .Select(folder => Path.Combine(folder, name))
+            .Select(folder => Path.Combine(folder, CliFileName))
             .FirstOrDefault(File.Exists);
+        return onPath ?? FindIn(InstallFolder());
     }
 
+    // The archives keep it in different places, so this searches the whole folder.
+    internal static string? FindIn(string folder)
+        => Directory.Exists(folder) ? Directory.EnumerateFiles(folder, CliFileName, SearchOption.AllDirectories).FirstOrDefault() : null;
+
     internal static string NotFoundMessage()
-        => $"deckcraft-cli was not found. Download it from https://github.com/storytold/deckcraft/releases/latest and put it on PATH (or set \"deckCraftCliPath\" in {Settings.DefaultPath()}).";
+        => $"deckcraft-cli was not found. Download it from https://github.com/storytold/deckcraft/releases/latest and put it on PATH (or set \"deckCraftCliPath\" in {Settings.DefaultPath()}, or use --renderer LibreOffice).";
 
     internal static void RenderAll(string cli, string deckPath, string outputFolder, string workingDirectory)
     {

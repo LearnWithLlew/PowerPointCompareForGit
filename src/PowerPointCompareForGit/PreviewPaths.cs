@@ -6,7 +6,7 @@ internal static class PreviewPaths
     private const int ShortShaLength = 7;
 
     // <repoRoot>/.git/pptx-previews/<deck folder relative to repoRoot>/<deck file name>.<short sha or "working">.png
-    // Renderers other than LibreOffice add .<renderer> after the version, so their previews never overwrite each other.
+    // DeckCraft adds .deckcraft after the version, so the two renderers' previews never overwrite each other.
     // deckPath may be absolute or relative to repoRoot.
     internal static string For(string repoRoot, string deckPath, string version, Renderer renderer = Renderer.LibreOffice)
         => Build(repoRoot, deckPath, version, renderer, "");

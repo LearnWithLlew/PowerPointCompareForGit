@@ -84,15 +84,15 @@ public class CommandLineArgumentsTests
     }
 
     [Fact]
-    public void RendererDefaultsToLibreOffice()
+    public void RendererDefaultsToDeckCraft()
     {
-        Assert.Equal(Renderer.LibreOffice, Parse("deck.pptx").Renderer);
+        Assert.Equal(Renderer.DeckCraft, Parse("deck.pptx").Renderer);
     }
 
     [Fact]
     public void RendererIsCaseInsensitive()
     {
-        Assert.Equal(Renderer.DeckCraft, Parse("deck.pptx", "--renderer", "deckcraft").Renderer);
+        Assert.Equal(Renderer.LibreOffice, Parse("deck.pptx", "--renderer", "libreoffice").Renderer);
     }
 
     [Fact]

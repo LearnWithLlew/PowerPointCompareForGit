@@ -14,7 +14,9 @@ A .NET tool that shows what changed in a PowerPoint deck across git commits. It 
 dotnet tool install --global PowerPointCompareForGit
 ```
 
-Requires [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) for rendering:
+Slides are drawn by [DeckCraft](https://github.com/storytold/deckcraft). If its `deckcraft-cli` isn't found, the tool offers to install DeckCraft and the CLI for you.
+
+To draw with [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) instead, pass `--renderer LibreOffice`:
 
 ```bash
 brew install --cask libreoffice                       # Mac
@@ -33,6 +35,7 @@ CreatePowerpointCheckpoint file.pptx --compare sha1 sha2      # sha1 vs sha2
 CreatePowerpointCheckpoint file.pptx --pages 40               # only slide 40, past the end means the last slide
 CreatePowerpointCheckpoint file.pptx --pages 2-25             # only slides 2 to 25, one PNG per slide
 CreatePowerpointCheckpoint file.pptx --compare --pages 2-25   # compare only those slides, stitched into one PNG per version
+CreatePowerpointCheckpoint file.pptx --renderer LibreOffice   # draw with LibreOffice instead of DeckCraft
 CreatePowerpointCheckpoint --reset                            # clear local settings
 ```
 

@@ -124,8 +124,20 @@ internal static class CommitPreviews
 
     private static ISlideRenderer FindRenderer(Renderer renderer)
         => renderer == Renderer.DeckCraft
-            ? new DeckCraftRenderer(DeckCraft.Find(Settings.Load(Settings.DefaultPath()).DeckCraftCliPath) ?? throw new InvalidOperationException(DeckCraft.NotFoundMessage()))
+            ? new DeckCraftRenderer(FindDeckCraft())
             : new LibreOfficeRenderer(FindLibreOffice());
+
+    // Prompts go to stderr so stdout stays a clean list of PNG paths.
+    private static string FindDeckCraft()
+    {
+        var configuredPath = Settings.Load(Settings.DefaultPath()).DeckCraftCliPath;
+        return DeckCraftSetup.Resolve(
+            () => DeckCraft.Find(configuredPath),
+            Console.In,
+            Console.Error,
+            Console.IsInputRedirected,
+            () => DeckCraftSetup.Install(Console.Error));
+    }
 
     // Prompts go to stderr so stdout stays a clean list of PNG paths.
     private static string FindLibreOffice()

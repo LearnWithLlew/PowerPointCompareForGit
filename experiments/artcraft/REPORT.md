@@ -2,6 +2,10 @@
 
 Run 2026-10-30 with DeckCraft / `deckcraft-cli` 0.12.0 and the LibreOffice installed on this Mac.
 
+## Outcome
+
+DeckCraft became the default on this branch by the maintainer's choice, with `--renderer LibreOffice` kept. The recommendation below is what this report said at the time.
+
 ## Recommendation
 
 Keep LibreOffice as the default, and keep `--renderer DeckCraft` as an option. Don't switch yet.

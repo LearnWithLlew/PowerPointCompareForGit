@@ -12,7 +12,8 @@ description: See what changed in a PowerPoint (.pptx) deck across git commits by
 ## Setup
 
 1. Install the tool: `dotnet tool install --global PowerPointCompareForGit`
-1. LibreOffice must be installed (`brew install --cask libreoffice`, `winget install TheDocumentFoundation.LibreOffice`, or `sudo apt install libreoffice`). If it is missing, the tool errors with the install command; ask the user before installing anything.
+1. Slides are drawn by DeckCraft's `deckcraft-cli`. In an interactive terminal the tool offers to install it. When input is piped, as in most agent shells, it errors instead; ask the user before installing anything.
+1. To use LibreOffice instead, pass `--renderer LibreOffice`. It must be installed (`brew install --cask libreoffice`, `winget install TheDocumentFoundation.LibreOffice`, or `sudo apt install libreoffice`).
 
 ## Commands
 
@@ -27,6 +28,7 @@ CreatePowerpointCheckpoint deck.pptx --compare sha1 sha2      # sha1 vs sha2
 CreatePowerpointCheckpoint deck.pptx --pages 40               # only slide 40
 CreatePowerpointCheckpoint deck.pptx --pages 2-25             # only slides 2 to 25, one PNG per slide
 CreatePowerpointCheckpoint deck.pptx --compare --pages 2-25   # compare only those slides, stitched into one PNG per version
+CreatePowerpointCheckpoint deck.pptx --renderer LibreOffice   # draw with LibreOffice instead of DeckCraft
 CreatePowerpointCheckpoint --reset                            # delete the user's settings
 ```
 
@@ -37,10 +39,11 @@ CreatePowerpointCheckpoint --reset                            # delete the user'
 
 ## Output
 
-- Previews are cached at `.git/pptx-previews/<path-to-deck>/<deck>.pptx.<shortsha>.png`; uncommitted edits go to `<deck>.pptx.working.png`. Git never tracks them, so don't add them to `.gitignore` or commit them.
+- Previews are cached at `.git/pptx-previews/<path-to-deck>/<deck>.pptx.<shortsha>.png`; uncommitted edits go to `<deck>.pptx.working.png`. The default DeckCraft renderer adds `.deckcraft` after the version, as in `<deck>.pptx.<shortsha>.deckcraft.png`. Git never tracks them, so don't add them to `.gitignore` or commit them.
 - `--pages` adds `.page.<n>` before the `.png`; a range with `--compare` adds `.pages.<first>-<last>`.
 - Slides are stacked vertically with a gray band labeled "Slide N" between them.
 - Errors go to stderr with exit code 1.
+- DeckCraft doesn't draw pictures stored only as SVG, so an empty spot on a slide may be a rendering gap rather than a deck problem. Check with `--renderer LibreOffice`.
 
 ## Things to avoid
 

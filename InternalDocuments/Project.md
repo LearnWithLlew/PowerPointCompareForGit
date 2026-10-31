@@ -14,7 +14,7 @@ CreatePowerpointCheckpoint file.pptx --compare                # working copy vs 
 CreatePowerpointCheckpoint file.pptx --compare sha1           # working copy vs sha1
 CreatePowerpointCheckpoint file.pptx --pages 40               # only slide 40, can be combined with --commit or --compare
 CreatePowerpointCheckpoint file.pptx --pages 2-25             # only slides 2 to 25
-CreatePowerpointCheckpoint file.pptx --renderer DeckCraft      # draw with deckcraft-cli instead of LibreOffice (experiment, see experiments/artcraft/REPORT.md)
+CreatePowerpointCheckpoint file.pptx --renderer LibreOffice   # draw with LibreOffice instead of DeckCraft
 CreatePowerpointCheckpoint --reset                            # clears local settings
 ```
 
@@ -33,13 +33,41 @@ With `--compare`, it renders both versions (if needed) and opens them in the con
 The tool never creates commits. Uncommitted edits are rendered directly from the file on disk to `my.pptx.working.png` (in the same folder as the cached previews), which is overwritten each run.
 
 ## Rendering
-Uses LibreOffice in headless mode, with no native code in our own package:
+DeckCraft is the default renderer and LibreOffice is the alternative, chosen with `--renderer`. Neither is native code in our own package. [experiments/artcraft/REPORT.md](../experiments/artcraft/REPORT.md) compares them.
+
+### DeckCraft
+Runs `deckcraft-cli render` with no window.
+- Whole decks use one launch with `--all`. Listed pages use one launch per slide, because each `--slide` reloads the deck.
+- `--scale 4/3` matches LibreOffice's export size, so a 4:3 deck is 960×720 in both.
+- Why it's the default: it is 2-5× faster and draws multi-column text, text shadows, reflections and 3D perspective that LibreOffice doesn't.
+- Accepted tradeoff: known gaps, reported upstream. Pictures stored only as SVG are not drawn ([#297](https://github.com/storytold/deckcraft/issues/297)), shadows and glows fill the holes of shapes ([#1596](https://github.com/storytold/deckcraft/issues/1596)), a glow on a transparent picture fills its rectangle ([#1597](https://github.com/storytold/deckcraft/issues/1597)), and some missing monospace fonts become proportional ([#1598](https://github.com/storytold/deckcraft/issues/1598)). An edit to a picture that isn't drawn won't show in a compare.
+
+### Finding DeckCraft
+1. `deckCraftCliPath` in settings.json, if set
+1. `deckcraft-cli` on PATH
+1. `~/.createpowerpointcheckpoint/deckcraft/`, where the tool installs it
+
+If not found, it offers to install it:
+```
+deckcraft-cli was not found.
+1. Install DeckCraft and deckcraft-cli (from https://github.com/storytold/deckcraft/releases)
+2. Cancel (or use --renderer LibreOffice, or set deckCraftCliPath in ~/.createpowerpointcheckpoint/settings.json)
+```
+- It downloads the latest release from GitHub and checks it against the release's `SHA256SUMS.txt` before installing into `~/.createpowerpointcheckpoint/deckcraft/`. No `sudo` or admin rights are needed.
+- Windows and Linux: one archive holds both the app and the CLI.
+- Mac: the CLI is a separate zip, and the app comes from `brew install --cask deckcraft` unless `/Applications/DeckCraft.app` exists. A failed app install is only a warning, because rendering needs just the CLI.
+- A missing app alone never prompts.
+- If input is piped (e.g. CI), it does not prompt; it errors with where to get it and the other options.
+- The tool doesn't update an installed copy.
+
+### LibreOffice
+Runs in headless mode:
 1. Split the deck into one single-slide `.pptx` per slide with `DocumentFormat.OpenXml` (managed, MIT).
 1. Convert all of them to PNG in a single launch: `soffice --headless --convert-to png --outdir <tmp> slide1.pptx slide2.pptx ...`
 1. Stitch the PNGs vertically into one long PNG with `StbImageSharp` / `StbImageWriteSharp` (managed, public domain/MIT). Slide labels use a built-in 5x7 pixel font, so no system fonts are needed.
 
 - Free and cross-platform (Mac/Windows/Linux), works in CI.
-- Requires LibreOffice to be installed; it is the only external dependency.
+- Known limitation: because each slide becomes its own deck, slide number fields always show 1.
 - Accepted tradeoff: rendering is not pixel-identical to PowerPoint.
 - Why not `--convert-to png` with a `PageRange` filter option: LibreOffice 25.2 ignores `PageRange` and `PixelWidth` and always exports slide 1 at its default size.
 - Why not PDF + PDFtoImage/SkiaSharp: it would ship native assets per OS.
@@ -48,7 +76,7 @@ Uses LibreOffice in headless mode, with no native code in our own package:
 - Measured: a 3-slide deck converted in one launch in 1.78 s (LibreOffice 25.2, Mac).
 
 ### Layout
-- Slides keep LibreOffice's default export size, with no resizing, so text stays sharp (e.g. a 4:3 deck exports at 960×720). Any slide size, including custom ones, is supported; the same deck always renders at the same size, so versions line up in the diff tool.
+- Slides keep the default export size, with no resizing, so text stays sharp (e.g. a 4:3 deck exports at 960×720). Any slide size, including custom ones, is supported; the same deck always renders at the same size, so versions line up in the diff tool.
 - Why not upscale to a fixed width: upscaling blurs text, which hides small changes. Why not enlarge the slide size before export: text and shapes can reflow, so the preview would no longer match the deck.
 - Slides are stacked vertically, separated by a 40px gray band labeled "Slide N".
 - Known limitation: very long decks (~100+ slides) may exceed some diff tools' max image size.
@@ -80,12 +108,14 @@ Previews are cached inside the repo's `.git/` folder, so git never tracks them a
 .git/pptx-previews/<path-to-deck>/my.pptx.<shortsha>.pages.2-25.png    # --pages with a range and --compare
 ```
 
+These are the LibreOffice names. DeckCraft adds `.deckcraft` after the version (`my.pptx.<shortsha>.deckcraft.page.1.png`), so the two renderers' previews never overwrite each other.
+
 - Uses the short (7-char) SHA so file names stay readable in the diff tool.
 - The cache persists, so each commit is rendered only once.
 - `working.png` is overwritten each run, and so are the working copy's page files.
 
 ## Settings
-Prompts (diff tool, LibreOffice install) go to stderr, so stdout stays a clean list of PNG paths.
+Prompts (diff tool, DeckCraft install, LibreOffice install) go to stderr, so stdout stays a clean list of PNG paths.
 
 Stored in `~/.createpowerpointcheckpoint/settings.json` (same pattern as SafeQuery's `~/.safequery/settings.json`).
 - One global setting per user, not per repo.

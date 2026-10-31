@@ -38,8 +38,9 @@ internal static class CommandLineArguments
 
     private static readonly Option<Renderer> RendererOption = new("--renderer")
     {
-        Description = "What draws the slides: LibreOffice (the default) or DeckCraft.",
-        HelpName = "renderer"
+        Description = "What draws the slides: DeckCraft (the default) or LibreOffice.",
+        HelpName = "renderer",
+        DefaultValueFactory = _ => Renderer.DeckCraft
     };
 
     private static readonly Option<bool> ResetOption = new("--reset")
