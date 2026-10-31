@@ -1,4 +1,4 @@
-namespace PowerPointCompareForGit;
+﻿namespace PowerPointCompareForGit;
 
 // One row of a selective compare. A null side is drawn as a blank.
 internal sealed record SlideRow(int? Left, int? Right);

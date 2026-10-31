@@ -1,4 +1,4 @@
-namespace PowerPointCompareForGit.Tests;
+﻿namespace PowerPointCompareForGit.Tests;
 
 public class SlideAlignmentTests
 {
