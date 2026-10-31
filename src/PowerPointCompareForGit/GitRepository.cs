@@ -54,8 +54,9 @@ internal sealed class GitRepository
     internal bool FileExistsAt(string sha, string relativePath)
         => ProcessRunner.Run("git", ["cat-file", "-e", $"{sha}:{relativePath}"], Root).ExitCode == 0;
 
+    // --filters gives the file as a checkout would. git show would give a Git LFS deck's pointer instead of the deck.
     internal void ExtractFile(string sha, string relativePath, string destination)
-        => File.WriteAllBytes(destination, Run("show", $"{sha}:{relativePath}").Output);
+        => File.WriteAllBytes(destination, Run("cat-file", "--filters", $"{sha}:{relativePath}").Output);
 
     private ProcessResult Run(params string[] arguments)
     {

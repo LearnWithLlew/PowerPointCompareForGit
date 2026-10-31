@@ -22,6 +22,24 @@ public class GitRepositoryTests
     }
 
     [Fact]
+    public void ExtractFileAppliesFiltersLikeGitLfs()
+    {
+        using var folder = RepoWithDeck(out var deckPath);
+        File.WriteAllText(folder.Combine(".gitattributes"), "*.txt filter=fake\n");
+        Git(folder.Path, "config", "filter.fake.smudge", "sed s/pointer/content/");
+        Git(folder.Path, "config", "filter.fake.clean", "cat");
+        File.WriteAllText(folder.Combine("stored.txt"), "pointer\n");
+        Git(folder.Path, "add", ".");
+        Git(folder.Path, "commit", "-q", "-m", "filtered file");
+        var repository = GitRepository.Containing(deckPath);
+        var extracted = folder.Combine("extracted.txt");
+
+        repository.ExtractFile(repository.ResolveCommit("HEAD"), "stored.txt", extracted);
+
+        Assert.Equal("content\n", File.ReadAllText(extracted));
+    }
+
+    [Fact]
     public void FindsRelativePathFromNestedFolder()
     {
         using var folder = RepoWithDeck(out var deckPath);
