@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/icon.png" alt="" width="48" align="center"> PowerPointCompareForGit
+# ![](https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/icon.png) PowerPointCompareForGit
 
 [![build-and-test](https://github.com/LearnWithLlew/PowerPointCompareForGit/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/LearnWithLlew/PowerPointCompareForGit/actions/workflows/build-and-test.yml)
 [![NuGet](https://img.shields.io/nuget/v/PowerPointCompareForGit.svg)](https://www.nuget.org/packages/PowerPointCompareForGit)
@@ -12,7 +12,7 @@ CreatePowerpointCheckpoint talk.pptx --compare --selective
 
 This opens your diff tool with only the slides that changed, side by side. It compares your uncommitted edits to the last commit that changed the deck. With no uncommitted edits, it compares the last two commits that changed it.
 
-<a href="https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/compare-selective-screenshot.png"><img src="https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/compare-selective-screenshot.png" alt="VisualDiffer after --compare --selective: slide 4 edited with the difference highlighted, and slide 5 added opposite a blank" width="400"></a>
+[![VisualDiffer after --compare --selective: slide 4 edited with the difference highlighted, and slide 5 added opposite a blank](https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/compare-selective-screenshot.png)](https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/compare-selective-screenshot.png)
 
 ## Install
 
