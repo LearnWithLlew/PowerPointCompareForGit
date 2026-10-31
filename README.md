@@ -14,6 +14,10 @@ This opens your diff tool with only the slides that changed, side by side. It co
 
 [![VisualDiffer after --compare --selective: slide 4 edited with the difference highlighted, and slide 5 added opposite a blank](https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/compare-selective-screenshot.png)](https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/compare-selective-screenshot.png)
 
+1. **Slide 4 edited:** lower left card, Serilog → NLog
+1. **Slide 5 added:** opposite a blank
+1. **Differences:** in red at the bottom, with the last commit on the left and your edits on the right
+
 ## Install
 
 ```bash
