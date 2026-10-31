@@ -4,9 +4,15 @@
 [![NuGet](https://img.shields.io/nuget/v/PowerPointCompareForGit.svg)](https://www.nuget.org/packages/PowerPointCompareForGit)
 [![NuGet downloads](https://img.shields.io/nuget/dt/PowerPointCompareForGit.svg)](https://www.nuget.org/packages/PowerPointCompareForGit)
 
-A .NET tool that shows what changed in a PowerPoint deck across git commits. It renders each version of a `.pptx` to a single tall PNG (all slides stacked) and opens two versions side by side in your diff tool.
+## See what changed in your deck
 
-> **Status:** early development. All commands work; the detected diff-tool commands are not yet verified on every OS.
+```bash
+CreatePowerpointCheckpoint talk.pptx --compare --selective
+```
+
+This opens your diff tool with only the slides that changed, side by side. It compares your uncommitted edits to the last commit that changed the deck. With no uncommitted edits, it compares the last two commits that changed it.
+
+<a href="https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/compare-selective-screenshot.png"><img src="https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/compare-selective-screenshot.png" alt="VisualDiffer after --compare --selective: slide 4 edited with the difference highlighted, and slide 5 added opposite a blank" width="400"></a>
 
 ## Install
 
@@ -14,37 +20,42 @@ A .NET tool that shows what changed in a PowerPoint deck across git commits. It 
 dotnet tool install --global PowerPointCompareForGit
 ```
 
-Slides are drawn by [DeckCraft](https://github.com/storytold/deckcraft). If its `deckcraft-cli` isn't found, the tool offers to install DeckCraft and the CLI for you.
+The first compare sets up two things:
+- **Slide drawing:** slides are drawn by [DeckCraft](https://github.com/storytold/deckcraft), and the tool offers to install it if it's missing.
+- **Diff tool:** you choose a PNG-capable diff tool. It suggests any it finds (Beyond Compare, Kaleidoscope, P4Merge, Araxis Merge, WinMerge), or you can enter a custom command such as `mytool --flags {file1} {file2}`.
 
-To draw with [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) instead, pass `--renderer LibreOffice`:
+Your answer is saved to `~/.createpowerpointcheckpoint/settings.json`.
 
-```bash
-brew install --cask libreoffice                       # Mac
-winget install TheDocumentFoundation.LibreOffice      # Windows
-sudo apt install libreoffice                          # Linux
-```
-
-## Usage
+## Other commands
 
 ```bash
-CreatePowerpointCheckpoint file.pptx                          # render the last commit that changed the file
-CreatePowerpointCheckpoint file.pptx --commit sha1,sha2,sha3  # render these commits
-CreatePowerpointCheckpoint file.pptx --compare                # working copy vs last commit that changed the file
-CreatePowerpointCheckpoint file.pptx --compare sha1           # working copy vs sha1
-CreatePowerpointCheckpoint file.pptx --compare sha1 sha2      # sha1 vs sha2
-CreatePowerpointCheckpoint file.pptx --compare --selective    # only the slides that changed, works with every form of --compare
-CreatePowerpointCheckpoint file.pptx --pages 40               # only slide 40, past the end means the last slide
-CreatePowerpointCheckpoint file.pptx --pages 2-25             # only slides 2 to 25, one PNG per slide
-CreatePowerpointCheckpoint file.pptx --compare --pages 2-25   # compare only those slides, stitched into one PNG per version
-CreatePowerpointCheckpoint file.pptx --renderer LibreOffice   # draw with LibreOffice instead of DeckCraft
-CreatePowerpointCheckpoint --reset                            # clear local settings
+CreatePowerpointCheckpoint talk.pptx --compare oslo --selective       # working copy vs a sha, tag or branch
+
+CreatePowerpointCheckpoint talk.pptx --compare oslo berlin --selective  # one version vs another
+
+CreatePowerpointCheckpoint talk.pptx --compare                        # every slide, not just the changed ones
+
+CreatePowerpointCheckpoint talk.pptx --compare --pages 2-25           # only slides 2 to 25, stitched into one PNG per version
+
+CreatePowerpointCheckpoint talk.pptx                                  # write a PNG of the last commit that changed the deck, and open nothing
+
+CreatePowerpointCheckpoint talk.pptx --commit sha1,sha2,sha3          # write a PNG of each of these commits
+
+CreatePowerpointCheckpoint talk.pptx --pages 40                       # write a PNG of only slide 40; past the end means the last slide
+
+CreatePowerpointCheckpoint talk.pptx --renderer LibreOffice           # draw with LibreOffice instead of DeckCraft
+
+CreatePowerpointCheckpoint --reset                                    # clear local settings
 ```
 
-Previews are cached in `.git/pptx-previews/`, so git never tracks them and each commit is rendered only once.
+`--selective` can't be combined with `--pages`.
 
-## Configure
+## Good to know
 
-The first `--compare` asks which diff tool to use and suggests any PNG-capable ones it finds (Beyond Compare, Kaleidoscope, P4Merge, Araxis Merge, WinMerge), or a custom command such as `mytool --flags {file1} {file2}`. The answer is saved to `~/.createpowerpointcheckpoint/settings.json`. `--reset` deletes that file.
+- Slides that moved but didn't change are hidden, and listed in the terminal as `Slides moved but unchanged: 19→23, 20→24.`
+- If no slide looks different, nothing opens and the terminal says so.
+- Speaker notes, animations and transitions aren't in the images, so changes to them won't show.
+- Previews are cached in `.git/pptx-previews/`, so git never tracks them and each commit is rendered only once.
 
 ## For AI agents
 
