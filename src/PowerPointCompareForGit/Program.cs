@@ -58,6 +58,11 @@ public static class Program
         var repository = GitRepository.Containing(deckPath);
         var relativePath = repository.RelativePath(deckPath);
         var (left, right) = ComparePlan.Choose(repository, relativePath, request.CompareShas);
+        if (request.Selective)
+        {
+            CompareSelective(repository, relativePath, deckPath, left, right, request.Renderer);
+            return;
+        }
 
         string RenderVersion(string version) => request.Pages is { } pages
             ? CommitPreviews.RenderForCompare(repository, relativePath, deckPath, version, pages, request.Renderer)
@@ -68,6 +73,31 @@ public static class Program
         Console.WriteLine(leftPreview);
         Console.WriteLine(rightPreview);
 
+        OpenInDiffTool(leftPreview, rightPreview);
+    }
+
+    // Opens only the slides that changed. Anything the images can't show goes to stderr, so stdout stays a clean list of PNG paths.
+    private static void CompareSelective(GitRepository repository, string relativePath, string deckPath, string left, string right, Renderer renderer)
+    {
+        var previews = CommitPreviews.RenderSelective(repository, relativePath, deckPath, left, right, renderer);
+        foreach (var message in previews.Alignment.Messages(VersionName(left), VersionName(right)))
+        {
+            Console.Error.WriteLine(message);
+        }
+
+        if (previews.Images is { } images)
+        {
+            Console.WriteLine(images.Left);
+            Console.WriteLine(images.Right);
+            OpenInDiffTool(images.Left, images.Right);
+        }
+    }
+
+    private static string VersionName(string version)
+        => version == PreviewPaths.WorkingCopy ? "the working copy" : version[..7];
+
+    private static void OpenInDiffTool(string leftPreview, string rightPreview)
+    {
         var diffTool = DiffToolSetup.Resolve(Settings.DefaultPath(), DiffTools.Detect(), Console.In, Console.Error, Console.IsInputRedirected);
         DiffTools.Launch(diffTool, leftPreview, rightPreview);
     }

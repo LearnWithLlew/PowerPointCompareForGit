@@ -24,6 +24,27 @@ public class CommandLineArgumentsTests
     }
 
     [Fact]
+    public void SelectiveWorksWithEveryCompareForm()
+    {
+        Assert.False(Parse("deck.pptx", "--compare").Selective);
+        Assert.True(Parse("deck.pptx", "--compare", "--selective").Selective);
+        Assert.Equal(["sha1"], Parse("deck.pptx", "--compare", "sha1", "--selective").CompareShas);
+        Assert.Equal(["sha1", "sha2"], Parse("deck.pptx", "--compare", "sha1", "sha2", "--selective").CompareShas);
+    }
+
+    [Fact]
+    public void SelectiveRequiresCompare()
+    {
+        Assert.Contains("--selective requires --compare.", Errors("deck.pptx", "--selective"));
+    }
+
+    [Fact]
+    public void SelectiveCantBeCombinedWithPages()
+    {
+        Assert.Contains("--selective can't be combined with --pages.", Errors("deck.pptx", "--compare", "--selective", "--pages", "2"));
+    }
+
+    [Fact]
     public void CommitListIsSplitOnCommas()
     {
         var request = Parse("deck.pptx", "--commit", "sha1, sha2,sha3");

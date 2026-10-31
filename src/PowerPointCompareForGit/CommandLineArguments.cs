@@ -4,7 +4,7 @@ namespace PowerPointCompareForGit;
 
 // What the user asked for. Compare is true for --compare, with 0, 1 or 2 shas in CompareShas.
 // Pages is null when the whole deck is wanted.
-internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool Compare, IReadOnlyList<string> CompareShas, PageRange? Pages, Renderer Renderer, bool Reset);
+internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool Compare, IReadOnlyList<string> CompareShas, PageRange? Pages, Renderer Renderer, bool Reset, bool Selective);
 
 internal static class CommandLineArguments
 {
@@ -28,6 +28,11 @@ internal static class CommandLineArguments
         HelpName = "sha",
         Arity = new ArgumentArity(0, 2),
         AllowMultipleArgumentsPerToken = true
+    };
+
+    private static readonly Option<bool> SelectiveOption = new("--selective")
+    {
+        Description = "With --compare, show only the slides that changed. Moved slides are listed on stderr."
     };
 
     private static readonly Option<string?> PagesOption = new("--pages")
@@ -56,7 +61,7 @@ internal static class CommandLineArguments
             AI agents: see {AgentSkillUrl}
             """)
         {
-            FileArgument, CommitOption, CompareOption, PagesOption, RendererOption, ResetOption
+            FileArgument, CommitOption, CompareOption, SelectiveOption, PagesOption, RendererOption, ResetOption
         };
         rootCommand.Validators.Add(result =>
         {
@@ -73,6 +78,16 @@ internal static class CommandLineArguments
             if (result.GetResult(CommitOption) is not null && result.GetResult(CompareOption) is not null)
             {
                 result.AddError("--commit and --compare can't be used together.");
+            }
+
+            if (result.GetValue(SelectiveOption) && result.GetResult(CompareOption) is null)
+            {
+                result.AddError("--selective requires --compare.");
+            }
+
+            if (result.GetValue(SelectiveOption) && result.GetResult(PagesOption) is not null)
+            {
+                result.AddError("--selective can't be combined with --pages.");
             }
 
             if (result.GetValue(PagesOption) is { } pages && PageRange.Parse(pages) is null)
@@ -93,6 +108,7 @@ internal static class CommandLineArguments
             parseResult.GetValue(CompareOption) ?? [],
             parseResult.GetValue(PagesOption) is { } pages ? PageRange.Parse(pages) : null,
             parseResult.GetValue(RendererOption),
-            parseResult.GetValue(ResetOption));
+            parseResult.GetValue(ResetOption),
+            parseResult.GetValue(SelectiveOption));
     }
 }
