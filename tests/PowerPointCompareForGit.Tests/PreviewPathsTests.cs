@@ -16,6 +16,22 @@ public class PreviewPathsTests
     }
 
     [Fact]
+    public void SelectiveNamesBothVersions()
+    {
+        var path = PreviewPaths.ForSelective(RepoRoot, "decks/my.pptx", "0123456789abcdef", "fedcba9876543210");
+
+        Assert.Equal(Expected("decks", "my.pptx.0123456.selective-vs.fedcba9.png"), path);
+    }
+
+    [Fact]
+    public void SelectiveNamesTheWorkingCopyAndRenderer()
+    {
+        var path = PreviewPaths.ForSelective(RepoRoot, "decks/my.pptx", PreviewPaths.WorkingCopy, "fedcba9876543210", Renderer.DeckCraft);
+
+        Assert.Equal(Expected("decks", "my.pptx.working.deckcraft.selective-vs.fedcba9.png"), path);
+    }
+
+    [Fact]
     public void WorkingCopyUsesWorkingLabel()
     {
         var path = PreviewPaths.For(RepoRoot, "decks/my.pptx", PreviewPaths.WorkingCopy);

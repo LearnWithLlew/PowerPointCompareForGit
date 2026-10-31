@@ -20,6 +20,42 @@ public class SlideStitcherTests
     }
 
     [Fact]
+    public void AlignedRowsSitLevelWithBlanksOppositeMissingSlides()
+    {
+        var (left, right) = SlideStitcher.StitchAligned(
+        [
+            (null, new NumberedSlide(21, new RgbaImage(100, 50, Blue))),
+            (new NumberedSlide(23, new RgbaImage(100, 50, Red)), new NumberedSlide(24, new RgbaImage(100, 50, Blue)))
+        ]);
+
+        const int band = SlideStitcher.BandHeight;
+        Assert.Equal((100, 2 * (band + 50)), (left.Width, left.Height));
+        Assert.Equal((100, 2 * (band + 50)), (right.Width, right.Height));
+        Assert.Equal(SlideStitcher.Background, left[99, 0]);
+        Assert.Equal(SlideStitcher.Background, left[50, band + 25]);
+        Assert.Equal(SlideStitcher.BandColor, right[99, 0]);
+        Assert.Equal(Blue, right[50, band + 25]);
+        Assert.Equal(Red, left[50, band + 50 + band + 25]);
+        Assert.Equal(Blue, right[50, band + 50 + band + 25]);
+    }
+
+    [Fact]
+    public void AlignedRowIsAsTallAsItsTallerSlide()
+    {
+        var (left, right) = SlideStitcher.StitchAligned(
+        [
+            (new NumberedSlide(1, new RgbaImage(100, 50, Red)), new NumberedSlide(1, new RgbaImage(200, 80, Blue))),
+            (new NumberedSlide(2, new RgbaImage(100, 50, Red)), new NumberedSlide(2, new RgbaImage(200, 80, Blue)))
+        ]);
+
+        const int band = SlideStitcher.BandHeight;
+        Assert.Equal((200, 2 * (band + 80)), (left.Width, left.Height));
+        Assert.Equal((200, 2 * (band + 80)), (right.Width, right.Height));
+        Assert.Equal(Red, left[50, band + 80 + band + 25]);
+        Assert.Equal(Blue, right[50, band + 80 + band + 25]);
+    }
+
+    [Fact]
     public void NarrowerSlidesArePaddedWithWhite()
     {
         var stitched = SlideStitcher.Stitch([new RgbaImage(100, 50, Red), new RgbaImage(80, 30, Blue)]);

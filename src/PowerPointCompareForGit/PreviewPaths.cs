@@ -19,6 +19,13 @@ internal static class PreviewPaths
     internal static string ForPages(string repoRoot, string deckPath, string version, PageRange pages, Renderer renderer = Renderer.LibreOffice)
         => Build(repoRoot, deckPath, version, renderer, $".pages.{pages.First}-{pages.Last}");
 
+    // Same folder, with .selective-vs.<other version> before the .png, because what's drawn depends on both versions.
+    internal static string ForSelective(string repoRoot, string deckPath, string version, string otherVersion, Renderer renderer = Renderer.LibreOffice)
+        => Build(repoRoot, deckPath, version, renderer, $".selective-vs.{Label(otherVersion)}");
+
+    private static string Label(string version)
+        => version == WorkingCopy ? WorkingCopy : version[..Math.Min(ShortShaLength, version.Length)];
+
     private static string Build(string repoRoot, string deckPath, string version, Renderer renderer, string suffix)
     {
         var root = Path.GetFullPath(repoRoot);
@@ -29,9 +36,8 @@ internal static class PreviewPaths
             throw new ArgumentException($"{deck} is not inside the repository {root}.", nameof(deckPath));
         }
 
-        var label = version == WorkingCopy ? WorkingCopy : version[..Math.Min(ShortShaLength, version.Length)];
         var rendererLabel = renderer == Renderer.LibreOffice ? "" : $".{renderer.ToString().ToLowerInvariant()}";
         var folder = Path.Combine(root, ".git", "pptx-previews", Path.GetDirectoryName(relativeDeck) ?? "");
-        return Path.Combine(folder, $"{Path.GetFileName(deck)}.{label}{rendererLabel}{suffix}.png");
+        return Path.Combine(folder, $"{Path.GetFileName(deck)}.{Label(version)}{rendererLabel}{suffix}.png");
     }
 }
