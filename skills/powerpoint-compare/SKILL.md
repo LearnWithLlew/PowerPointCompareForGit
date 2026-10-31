@@ -25,6 +25,7 @@ CreatePowerpointCheckpoint deck.pptx --commit sha1,sha2,sha3  # render these com
 CreatePowerpointCheckpoint deck.pptx --compare                # working copy vs last commit that changed the file
 CreatePowerpointCheckpoint deck.pptx --compare sha1           # working copy vs sha1
 CreatePowerpointCheckpoint deck.pptx --compare sha1 sha2      # sha1 vs sha2
+CreatePowerpointCheckpoint deck.pptx --compare --selective    # only the slides that changed, works with every form of --compare
 CreatePowerpointCheckpoint deck.pptx --pages 40               # only slide 40
 CreatePowerpointCheckpoint deck.pptx --pages 2-25             # only slides 2 to 25, one PNG per slide
 CreatePowerpointCheckpoint deck.pptx --compare --pages 2-25   # compare only those slides, stitched into one PNG per version
@@ -35,12 +36,14 @@ CreatePowerpointCheckpoint --reset                            # delete the user'
 - `--commit` and `--compare` can't be combined. `--compare` takes at most two shas.
 - Without `--compare`, the tool prints the path of each PNG and opens nothing. Read those PNGs yourself to describe the slides.
 - With `--compare`, it opens the user's diff tool. That is for the human; to compare versions yourself, render both with `--commit` and read the two PNGs.
+- `--selective` needs `--compare` and can't be combined with `--pages`. Moved slides and "no visible changes" are reported on stderr, and when no slide changed it prints no paths and opens nothing.
 - `--pages` works with `--commit` and `--compare`, and is faster on long decks. Pages past the end go to the last slide, so check the slide number in the printed file names. Each version clamps to its own length.
 
 ## Output
 
 - Previews are cached at `.git/pptx-previews/<path-to-deck>/<deck>.pptx.<shortsha>.png`; uncommitted edits go to `<deck>.pptx.working.png`. The default DeckCraft renderer adds `.deckcraft` after the version, as in `<deck>.pptx.<shortsha>.deckcraft.png`. Git never tracks them, so don't add them to `.gitignore` or commit them.
 - `--pages` adds `.page.<n>` before the `.png`; a range with `--compare` adds `.pages.<first>-<last>`.
+- `--selective` adds `.selective-vs.<other version>` before the `.png`.
 - Slides are stacked vertically with a gray band labeled "Slide N" between them.
 - Errors go to stderr with exit code 1.
 - DeckCraft doesn't draw pictures stored only as SVG, so an empty spot on a slide may be a rendering gap rather than a deck problem. Check with `--renderer LibreOffice`.

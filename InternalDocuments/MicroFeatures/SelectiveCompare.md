@@ -23,27 +23,27 @@ CreatePowerpointCheckpoint file.pptx --compare sha1 sha2 --selective  # sha1 vs 
 ## Steps
 1. Run both decks through Determinize to normalize them. This removes differences in GUIDs and compression style.
 1. Match slides that are identical between the two decks, regardless of position. A slide that moved from 19 to 23 still counts as identical.
-1. Remove the identical slides from both decks.
-1. Render each remaining set to one image and compare the two images.
+1. Draw only the slides that aren't identical, from the original decks rather than the normalized copies, and stitch one image per deck.
+1. Open the two images in the diff tool.
 
 ## Normalizing
 Determinize's normalization comes from the `DeterministicIoPackaging` NuGet package (MIT, targets `net10.0`), which we reference directly. It installs with our tool, so it adds no external dependency beyond the renderers.
 - Why not call the `determinize` command: every user would have to install another tool, and we'd need find-and-offer-to-install logic like the renderers'.
 - Why not write our own: it means maintaining work that already exists, and it would be easy to miss sources of difference.
 
-To verify:
-1. The library's API can normalize a deck from our code.
-1. Normalizing is enough to match unchanged slides in real decks saved by PowerPoint, which may renumber IDs inside a slide when saving.
+To verify: normalizing is enough to match unchanged slides in real decks saved by PowerPoint, which may renumber IDs inside a slide when saving. So far this has only been tested on generated decks. Relationship ids and part names are already left out of the fingerprint, so what's left to find out is whether PowerPoint rewrites anything else.
 
 ## Identical slides
 Two slides are identical when their normalized slide XML and everything it draws from (layout, master, theme and media, with media compared by content) all match.
+- The slide size and the deck's default text style count too, because they change how every slide draws.
+- A master's list of layouts is ignored, because a slide only draws from its own layout.
 - Speaker notes are ignored because they don't appear in the image. A notes-only change would otherwise show two identical-looking slides.
 - A moved slide with a slide number field has identical XML but displays a different number. It counts as identical, and the move is reported on stderr.
 - Why not compare only the slide's own XML: editing a master or replacing a linked image could change how a slide looks while it's still treated as identical.
 - Why not compare rendered images: this renders every slide, which loses the speed benefit on long decks.
 
 ## Lining up changed slides
-The longest run of identical slides that appear in the same order in both decks are the fixed points, as in a text diff. Slides that aren't identical are grouped by the fixed points around them, then paired in order within each group. Where one side has nothing to pair, it gets a slide-sized blank, so paired slides sit level in the diff tool.
+The longest run of identical slides that appear in the same order in both decks are the fixed points, as in a text diff. Slides that aren't identical are grouped by the fixed points around them, then paired in order within each group. Where one side has nothing to pair, it gets a slide-sized blank with no band, so paired slides sit level in the diff tool.
 - Moved slides are still hidden, but they aren't fixed points. If A, B, C became C, A, B, then A and B are the fixed points and C counts as moved.
 - Each slide can match only one slide in the other deck, so if a duplicate is added, the extra copy shows as added.
 - If a commit changes the slide size, each row is as tall as the taller slide in it, and a blank is the same size as the slide opposite it. When both decks use one size, nothing extra is added.
@@ -78,13 +78,14 @@ A selective image depends on both decks, because the slides it shows depend on w
 ```
 
 - Each name starts with its own version, so the diff tool shows which side is which.
-- If both files exist, the tool reuses them and renders nothing.
+- If both files exist, the tool reuses them and renders nothing. It still reads both decks, because the list of moved slides comes from them.
 - If either side is the working copy, they're regenerated on every run.
 - The name also includes the renderer when it isn't LibreOffice, using the existing `PreviewPaths` pattern.
 - Why not regenerate on every run: it redoes the renders each time, unlike every other commit compare in this tool.
 - Why not cache each slide by a hash of its content: it needs a new cache layout and more logic for what's usually only a few slides.
 
 ## Known limitations
+- When several slides could be the fixed points, one is chosen. In a very short deck, an edited slide next to a moved one can then show as one removal and one addition instead of a pair. Long decks have enough fixed points that this is rare.
 - An edited picture that DeckCraft doesn't draw counts as changed, but the slide looks the same in both images.
 - DeckCraft launches once per listed slide, so a compare with many changed slides could take longer than rendering the whole deck with `--all`.
 
