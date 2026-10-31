@@ -1,4 +1,4 @@
-namespace PowerPointCompareForGit;
+﻿namespace PowerPointCompareForGit;
 
 // What draws the slides, chosen with --renderer.
 internal enum Renderer

@@ -1,4 +1,4 @@
-namespace PowerPointCompareForGit;
+﻿namespace PowerPointCompareForGit;
 
 internal static class DeckRenderer
 {
