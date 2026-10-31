@@ -31,14 +31,19 @@ Determinize's normalization comes from the `DeterministicIoPackaging` NuGet pack
 - Why not call the `determinize` command: every user would have to install another tool, and we'd need find-and-offer-to-install logic like the renderers'.
 - Why not write our own: it means maintaining work that already exists, and it would be easy to miss sources of difference.
 
-To verify: normalizing is enough to match unchanged slides in real decks saved by PowerPoint, which may renumber IDs inside a slide when saving. So far this has only been tested on generated decks. Relationship ids and part names are already left out of the fingerprint, so what's left to find out is whether PowerPoint rewrites anything else.
+Normalizing fails on some pictures that PowerPoint opens fine, such as a PNG it can't read to the end. The tool then fingerprints the deck as it is, so one bad picture doesn't stop the compare.
+
+Normalizing isn't enough by itself for decks saved by PowerPoint, as Slides in the Talks repo showed: see what's ignored below. Across 12 pairs of commits, this took "Zero day bugs" from 109 changed rows to 11 and Analyzers from 35 to 1.
 
 ## Identical slides
 Two slides are identical when their normalized slide XML and everything it draws from (layout, master, theme and media, with media compared by content) all match.
 - The slide size and the deck's default text style count too, because they change how every slide draws.
 - A master's list of layouts is ignored, because a slide only draws from its own layout.
-- Speaker notes are ignored because they don't appear in the image. A notes-only change would otherwise show two identical-looking slides.
-- A moved slide with a slide number field has identical XML but displays a different number. It counts as identical, and the move is reported on stderr.
+- Speaker notes, animations and transitions are ignored because they don't appear in the image. A change to only those would otherwise show two identical-looking slides.
+- Things PowerPoint rewrites on save without changing the drawing are ignored: the stored value of date and slide number fields, GUIDs, where namespaces are declared, space between elements, and the `dirty`, `err` and `smtClean` flags.
+- Relationship ids and part names are ignored, because PowerPoint can renumber them. Each id is replaced by what it points to.
+- PNGs are compared by decoded pixels, because normalizing recompresses them. A PNG that can't be decoded is compared by its bytes.
+- A moved slide with a slide number field displays a different number, but it counts as identical, and the move is reported on stderr.
 - Why not compare only the slide's own XML: editing a master or replacing a linked image could change how a slide looks while it's still treated as identical.
 - Why not compare rendered images: this renders every slide, which loses the speed benefit on long decks.
 
@@ -85,6 +90,7 @@ A selective image depends on both decks, because the slides it shows depend on w
 - Why not cache each slide by a hash of its content: it needs a new cache layout and more logic for what's usually only a few slides.
 
 ## Known limitations
+- Some slides can still count as changed with identical images, when something else invisible changed. In the Talks repo this was 2 of 10 rows in one compare.
 - When several slides could be the fixed points, one is chosen. In a very short deck, an edited slide next to a moved one can then show as one removal and one addition instead of a pair. Long decks have enough fixed points that this is rare.
 - An edited picture that DeckCraft doesn't draw counts as changed, but the slide looks the same in both images.
 - DeckCraft launches once per listed slide, so a compare with many changed slides could take longer than rendering the whole deck with `--all`.
