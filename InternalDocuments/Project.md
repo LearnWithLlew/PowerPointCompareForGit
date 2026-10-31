@@ -14,6 +14,7 @@ CreatePowerpointCheckpoint file.pptx --compare                # working copy vs 
 CreatePowerpointCheckpoint file.pptx --compare sha1           # working copy vs sha1
 CreatePowerpointCheckpoint file.pptx --pages 40               # only slide 40, can be combined with --commit or --compare
 CreatePowerpointCheckpoint file.pptx --pages 2-25             # only slides 2 to 25
+CreatePowerpointCheckpoint file.pptx --renderer DeckCraft      # draw with deckcraft-cli instead of LibreOffice (experiment, see experiments/artcraft/REPORT.md)
 CreatePowerpointCheckpoint --reset                            # clears local settings
 ```
 
