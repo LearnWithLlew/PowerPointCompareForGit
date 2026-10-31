@@ -9,6 +9,28 @@ internal sealed record SlideMove(int From, int To);
 // What a selective compare shows. All slide numbers are 1-based.
 internal sealed record SlideAlignment(IReadOnlyList<SlideRow> Rows, IReadOnlyList<SlideMove> Moves)
 {
+    private const int MovesListed = 10;
+
+    // What the images can't show. leftName and rightName describe the two versions.
+    internal IReadOnlyList<string> Messages(string leftName, string rightName)
+    {
+        var messages = new List<string>();
+        if (Rows.Count == 0)
+        {
+            messages.Add(Moves.Count == 0 ? $"No visible slide changes between {leftName} and {rightName}." : "Slides were reordered, but none changed.");
+        }
+
+        if (Moves.Count > 0)
+        {
+            var listed = string.Join(", ", Moves.Take(MovesListed).Select(move => $"{move.From}→{move.To}"));
+            messages.Add(Moves.Count > MovesListed
+                ? $"Slides moved but unchanged: {listed} ...and {Moves.Count - MovesListed} more."
+                : $"Slides moved but unchanged: {listed}.");
+        }
+
+        return messages;
+    }
+
     internal static SlideAlignment Of(IReadOnlyList<string> left, IReadOnlyList<string> right)
     {
         var fixedPoints = LongestCommonSubsequence(left, right);

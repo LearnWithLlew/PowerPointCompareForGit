@@ -36,6 +36,28 @@ internal static class DeckRenderer
             }
         });
 
+    // Renders only the slides in the rows, and writes two PNGs of the same size whose rows sit level.
+    internal static void RenderAligned(ISlideRenderer renderer, string leftDeck, string rightDeck, IReadOnlyList<SlideRow> rows, string leftOutput, string rightOutput)
+        => InWorkFolder(work =>
+        {
+            var left = RenderNumbered(renderer, leftDeck, rows.Select(row => row.Left), Directory.CreateDirectory(Path.Combine(work, "left")).FullName);
+            var right = RenderNumbered(renderer, rightDeck, rows.Select(row => row.Right), Directory.CreateDirectory(Path.Combine(work, "right")).FullName);
+            var (leftImage, rightImage) = SlideStitcher.StitchAligned(rows.Select(row => (Find(left, row.Left), Find(right, row.Right))).ToList());
+            SaveInto(leftImage, leftOutput, work);
+            SaveInto(rightImage, rightOutput, work);
+        });
+
+    private static Dictionary<int, RgbaImage> RenderNumbered(ISlideRenderer renderer, string deckPath, IEnumerable<int?> slideNumbers, string work)
+    {
+        var wanted = slideNumbers.OfType<int>().ToList();
+        return wanted.Count == 0
+            ? []
+            : wanted.Zip(renderer.RenderSlides(deckPath, wanted, work)).ToDictionary(pair => pair.First, pair => pair.Second);
+    }
+
+    private static NumberedSlide? Find(Dictionary<int, RgbaImage> slides, int? slideNumber)
+        => slideNumber is { } number ? new NumberedSlide(number, slides[number]) : null;
+
     private static void InWorkFolder(Action<string> action)
     {
         var work = Directory.CreateTempSubdirectory("pptx-render-");

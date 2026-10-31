@@ -1,4 +1,8 @@
-﻿namespace PowerPointCompareForGit.Tests;
+﻿using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Presentation;
+using A = DocumentFormat.OpenXml.Drawing;
+
+namespace PowerPointCompareForGit.Tests;
 
 // Runs real LibreOffice, which must be installed (CI installs it).
 public class CommitPreviewsTests
@@ -21,6 +25,68 @@ public class CommitPreviewsTests
 
         Assert.Equal(3 * (SlideStitcher.BandHeight + SlideHeight), RgbaImage.LoadPng(threeSlidePreview).Height);
         Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(oneSlidePreview).Height);
+    }
+
+    [Fact]
+    public void SelectiveDrawsOnlyTheChangedSlideOfEachVersion()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+        var sha = repository.ResolveCommit("HEAD");
+        EditSecondSlide(deckPath);
+
+        var previews = CommitPreviews.RenderSelective(repository, "decks/my.pptx", deckPath, sha, PreviewPaths.WorkingCopy);
+
+        Assert.Equal([new SlideRow(2, 2)], previews.Alignment.Rows);
+        var (left, right) = previews.Images!.Value;
+        Assert.Equal(PreviewPaths.ForSelective(repository.Root, "decks/my.pptx", sha, PreviewPaths.WorkingCopy), left);
+        Assert.Equal(PreviewPaths.ForSelective(repository.Root, "decks/my.pptx", PreviewPaths.WorkingCopy, sha), right);
+        Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(left).Height);
+        Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(right).Height);
+    }
+
+    [Fact]
+    public void SelectiveWithNoChangesHasNoImages()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+        var sha = repository.ResolveCommit("HEAD");
+
+        var previews = CommitPreviews.RenderSelective(repository, "decks/my.pptx", deckPath, sha, PreviewPaths.WorkingCopy);
+
+        Assert.Empty(previews.Alignment.Rows);
+        Assert.Null(previews.Images);
+    }
+
+    [Fact]
+    public void SelectiveReusesCachedPreviewsBetweenCommits()
+    {
+        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
+        var repository = GitRepository.Containing(deckPath);
+        var before = repository.ResolveCommit("HEAD");
+        EditSecondSlide(deckPath);
+        GitRepositoryTests.Git(folder.Path, "commit", "-q", "-am", "edit");
+        var after = repository.ResolveCommit("HEAD");
+        var cachedLeft = PreviewPaths.ForSelective(repository.Root, "decks/my.pptx", before, after);
+        var cachedRight = PreviewPaths.ForSelective(repository.Root, "decks/my.pptx", after, before);
+        Directory.CreateDirectory(Path.GetDirectoryName(cachedLeft)!);
+        File.WriteAllText(cachedLeft, "already rendered");
+        File.WriteAllText(cachedRight, "already rendered");
+
+        CommitPreviews.RenderSelective(repository, "decks/my.pptx", deckPath, before, after);
+
+        Assert.Equal("already rendered", File.ReadAllText(cachedLeft));
+        Assert.Equal("already rendered", File.ReadAllText(cachedRight));
+    }
+
+    private static void EditSecondSlide(string deckPath)
+    {
+        using var deck = PresentationDocument.Open(deckPath, true);
+        var presentationPart = deck.PresentationPart!;
+        var slideId = presentationPart.Presentation!.SlideIdList!.Elements<SlideId>().ElementAt(1);
+        var slide = (SlidePart)presentationPart.GetPartById(slideId.RelationshipId!);
+        slide.Slide!.Descendants<A.Text>().First().Text = "Edited";
+        slide.Slide.Save();
     }
 
     [Fact]

@@ -1,5 +1,8 @@
 ﻿namespace PowerPointCompareForGit;
 
+// Images is null when no slide changed.
+internal sealed record SelectivePreviews(SlideAlignment Alignment, (string Left, string Right)? Images);
+
 internal static class CommitPreviews
 {
     // Returns the preview PNG for the deck as of the commit, rendering it only if it isn't cached yet.
@@ -73,6 +76,27 @@ internal static class CommitPreviews
 
             return previewPath;
         });
+
+    // Compares the versions and draws only the slides that changed, reusing the images if both are cached.
+    // The decks are always read, because the moves come from them. There are no images when nothing changed.
+    internal static SelectivePreviews RenderSelective(GitRepository repository, string relativePath, string deckPath, string left, string right, Renderer renderer = Renderer.LibreOffice)
+        => WithDeck(repository, relativePath, deckPath, left, leftDeck => WithDeck(repository, relativePath, deckPath, right, rightDeck =>
+        {
+            var alignment = SlideAlignment.Of(SlideFingerprints.Of(leftDeck), SlideFingerprints.Of(rightDeck));
+            if (alignment.Rows.Count == 0)
+            {
+                return new SelectivePreviews(alignment, null);
+            }
+
+            var leftPreview = PreviewPaths.ForSelective(repository.Root, relativePath, left, right, renderer);
+            var rightPreview = PreviewPaths.ForSelective(repository.Root, relativePath, right, left, renderer);
+            if (left == PreviewPaths.WorkingCopy || right == PreviewPaths.WorkingCopy || !File.Exists(leftPreview) || !File.Exists(rightPreview))
+            {
+                DeckRenderer.RenderAligned(FindRenderer(renderer), leftDeck, rightDeck, alignment.Rows, leftPreview, rightPreview);
+            }
+
+            return new SelectivePreviews(alignment, (leftPreview, rightPreview));
+        }));
 
     private static IReadOnlyList<string> RenderPagesOf(GitRepository repository, string relativePath, string deck, string version, PageRange pages, Renderer renderer)
     {
