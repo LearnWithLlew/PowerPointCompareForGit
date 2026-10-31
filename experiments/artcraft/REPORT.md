@@ -58,7 +58,7 @@ The fallback is the main reason text wraps differently. For example, `Cutting Co
 
 ## DeckCraft problems
 
-1. **Pictures stored only as SVG are missing.** All 9 slides that have them lose the picture: `WorkingWithAI_MyFirst4Weeks.pptx` slides 2, 5, 7, 8, 34, 35, 62, 88 and `Analyzers.Net.pptx` slide 33. Several are QR codes. Those pictures have an SVG and no PNG fallback, which PowerPoint itself normally writes, so decks saved by other tools are the ones at risk. 38 other slides with SVG plus a fallback were not affected.
+1. **Pictures stored only as SVG are missing.** All 9 slides that have them lose the picture: `WorkingWithAI_MyFirst4Weeks.pptx` slides 2, 5, 7, 8, 34, 35, 62, 88 and `Analyzers.Net.pptx` slide 33. Several are QR codes. Those pictures have an SVG and no PNG fallback, which PowerPoint itself normally writes, so decks saved by other tools are the ones at risk. 38 other slides have an SVG with a fallback. None of them came out blank, but I didn't check each one.
 1. **Donut shapes get a gray center.** The hole is filled gray. It shows clearly in the test deck, `Thread_base_theory_test.pptx` slides 3, 4, 15, 16 and `Quantum Computing for BigData.pptx` slide 31. It darkens what sits behind the hole, and on the Thread slides that changes how the slide reads. `Documentation.pptx` slide 69 and `Remote Mob Programming.pptx` slide 65 have small donuts that were too small to judge.
 1. **Cut-out characters in `Leveling_Up.pptx` get a pale rectangle.** The picture's transparent area is drawn as a pale wash instead of clear. I saw this on the 8 slides I checked. The deck uses PowerPoint's background removal, but other decks that use it render fine, so that is not the whole cause. I didn't find the actual cause.
 1. **Text that should shrink to fit doesn't, when the file has no stored scale.** In the test deck LibreOffice shrinks it and DeckCraft leaves it overflowing. PowerPoint normally stores a scale, so this may rarely matter in real decks.
@@ -79,8 +79,9 @@ The fallback is the main reason text wraps differently. For example, `Cutting Co
 - **Table header text:** DeckCraft makes it bold and LibreOffice doesn't. Table text sits a few pixels differently, which affects `Arlo_git_notation.pptx` slide 3.
 - **Table cell fill:** `Lucky Conference.pptx` slide 58 has clear cells in LibreOffice and solid beige in DeckCraft.
 - **Charts:** same data, different plot size, legend position and gridlines. `Agile Development Practices - Explained.pptx` slide 7 has the legend at the bottom in LibreOffice and at the top in DeckCraft.
-- **Glow:** LibreOffice draws it much wider. `How To Setup Remote Pairing & Mobibing.pptx` also has visibly different gradient angles, and its slides show large differences across the background.
-- **Texture fills:** `Zero day bugs.pptx` slides 24-47 have a darker dotted background in LibreOffice and a lighter gray in DeckCraft. These are the highest-scoring slides in the whole run, even though the content matches.
+- **Glow:** LibreOffice draws it much wider in the test deck.
+- **Gradient angle:** `How To Setup Remote Pairing & Mobibing.pptx` slides 9 and 13 have visibly different angles, which changes large areas of the background.
+- **Texture fills:** Many of `Zero day bugs.pptx` slides 24-47 have a darker dotted background in LibreOffice and a lighter gray in DeckCraft. These are the highest-scoring slides in the whole run, even though the content matches.
 - **Video and audio icons:** `Pair Programming.pptx` slide 4 is a gray screen with a speaker icon in LibreOffice, and DeckCraft shows the picture underneath with the icon on top. Other video slides match.
 - **Text weight:** LibreOffice text looks slightly heavier everywhere, even in the same font. This is why nearly no slide is pixel-identical.
 
