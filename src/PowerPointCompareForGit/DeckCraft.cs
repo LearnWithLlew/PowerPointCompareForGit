@@ -25,6 +25,20 @@ internal static class DeckCraft
     internal static string NotFoundMessage()
         => $"deckcraft-cli was not found. Download it from https://github.com/storytold/deckcraft/releases/latest and put it on PATH (or set \"deckCraftCliPath\" in {Settings.DefaultPath()}).";
 
+    internal static void RenderAll(string cli, string deckPath, string outputFolder, string workingDirectory)
+    {
+        string[] arguments = ["render", deckPath, "--all", "--scale", PixelsPerPoint.ToString(CultureInfo.InvariantCulture), outputFolder];
+        var result = ProcessRunner.Run(cli, arguments, workingDirectory);
+        if (result.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"deckcraft-cli failed (exit code {result.ExitCode}): {result.Error.Trim()}");
+        }
+    }
+
+    // RenderAll names them slide-01.png, slide-02.png... slide-99.png, slide-100.png.
+    internal static string PathInRenderAll(string outputFolder, int slideNumber)
+        => Path.Combine(outputFolder, $"slide-{slideNumber.ToString("D2", CultureInfo.InvariantCulture)}.png");
+
     // slideNumber is 1-based; deckcraft-cli counts from 0.
     internal static void RenderSlide(string cli, string deckPath, int slideNumber, string outputPath, string workingDirectory)
     {

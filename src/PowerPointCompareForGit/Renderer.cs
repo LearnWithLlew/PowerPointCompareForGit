@@ -37,10 +37,20 @@ internal sealed class LibreOfficeRenderer(string soffice) : ISlideRenderer
 internal sealed class DeckCraftRenderer(string cli) : ISlideRenderer
 {
     public List<RgbaImage> RenderSlides(string deckPath, IReadOnlyList<int> slideNumbers, string work)
-        => slideNumbers.Select(slideNumber =>
+    {
+        // Every launch reloads the deck, so draw them all in one launch when all are wanted.
+        if (slideNumbers.SequenceEqual(Enumerable.Range(1, SlideSplitter.CountSlides(deckPath))))
+        {
+            var folder = Path.Combine(work, "all");
+            DeckCraft.RenderAll(cli, deckPath, folder, work);
+            return slideNumbers.Select(slideNumber => RgbaImage.LoadPng(DeckCraft.PathInRenderAll(folder, slideNumber))).ToList();
+        }
+
+        return slideNumbers.Select(slideNumber =>
         {
             var png = Path.Combine(work, $"slide{slideNumber:D4}.png");
             DeckCraft.RenderSlide(cli, deckPath, slideNumber, png, work);
             return RgbaImage.LoadPng(png);
         }).ToList();
+    }
 }

@@ -18,6 +18,15 @@ public class DeckRendererTests
         Assert.Equal(3 * (SlideStitcher.BandHeight + 720), image.Height);
     }
 
+    [Theory]
+    [InlineData(1, "slide-01.png")]
+    [InlineData(99, "slide-99.png")]
+    [InlineData(100, "slide-100.png")]
+    public void DeckCraftBatchFileNames(int slideNumber, string expected)
+    {
+        Assert.Equal(Path.Combine("out", expected), DeckCraft.PathInRenderAll("out", slideNumber));
+    }
+
     // Experiment: deckcraft-cli is optional and CI doesn't install it, so this only runs where it is on PATH.
     [Fact]
     public void DeckCraftRendersTheSameSizeAsLibreOffice()
