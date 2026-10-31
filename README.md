@@ -29,23 +29,32 @@ Your answer is saved to `~/.createpowerpointcheckpoint/settings.json`.
 ## Other commands
 
 ```bash
-CreatePowerpointCheckpoint talk.pptx --compare oslo --selective       # working copy vs a sha, tag or branch
+# working copy vs a sha, tag or branch
+CreatePowerpointCheckpoint talk.pptx --compare oslo --selective
 
-CreatePowerpointCheckpoint talk.pptx --compare oslo berlin --selective  # one version vs another
+# one version vs another
+CreatePowerpointCheckpoint talk.pptx --compare oslo berlin --selective
 
-CreatePowerpointCheckpoint talk.pptx --compare                        # every slide, not just the changed ones
+# every slide, not just the changed ones
+CreatePowerpointCheckpoint talk.pptx --compare
 
-CreatePowerpointCheckpoint talk.pptx --compare --pages 2-25           # only slides 2 to 25, stitched into one PNG per version
+# only slides 2 to 25, stitched into one PNG per version
+CreatePowerpointCheckpoint talk.pptx --compare --pages 2-25
 
-CreatePowerpointCheckpoint talk.pptx                                  # write a PNG of the last commit that changed the deck, and open nothing
+# write a PNG of the last commit that changed the deck, and open nothing
+CreatePowerpointCheckpoint talk.pptx
 
-CreatePowerpointCheckpoint talk.pptx --commit sha1,sha2,sha3          # write a PNG of each of these commits
+# write a PNG of each of these commits
+CreatePowerpointCheckpoint talk.pptx --commit sha1,sha2,sha3
 
-CreatePowerpointCheckpoint talk.pptx --pages 40                       # write a PNG of only slide 40; past the end means the last slide
+# write a PNG of only slide 40; past the end means the last slide
+CreatePowerpointCheckpoint talk.pptx --pages 40
 
-CreatePowerpointCheckpoint talk.pptx --renderer LibreOffice           # draw with LibreOffice instead of DeckCraft
+# draw with LibreOffice instead of DeckCraft
+CreatePowerpointCheckpoint talk.pptx --renderer LibreOffice
 
-CreatePowerpointCheckpoint --reset                                    # clear local settings
+# clear local settings
+CreatePowerpointCheckpoint --reset
 ```
 
 `--selective` can't be combined with `--pages`.
