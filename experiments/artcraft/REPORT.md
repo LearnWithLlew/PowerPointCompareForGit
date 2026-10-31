@@ -10,6 +10,17 @@ DeckCraft is faster, and on several features it draws the slide better. But it s
 
 Revisit this when DeckCraft fixes the three bugs under [DeckCraft problems](#deckcraft-problems). It calls itself alpha and is shipping a release every few days.
 
+## Reported to DeckCraft
+
+Posted 2026-10-31 from @isidore, retested on `deckcraft-cli` 0.13.1 using test decks with none of the talk content:
+
+- [#1595](https://github.com/storytold/deckcraft/issues/1595): overview of the whole comparison, with the offer of a call.
+- [#1596](https://github.com/storytold/deckcraft/issues/1596): shadows and glows fill the holes of shapes.
+- [#1597](https://github.com/storytold/deckcraft/issues/1597): glow on a transparent picture fills its rectangle.
+- [#1598](https://github.com/storytold/deckcraft/issues/1598): monospace fallback.
+
+The font flip and the parallel slowdown under Repeatability and Speed did not reproduce on 0.13.1, including 64 renders of one slide with 8 workers and 4 simultaneous renders of the largest deck.
+
 ## What was run
 
 - 49 decks (25 from `lightning_talks`, 24 from `Talks`), 1,541 slides, 221 of them hidden.
@@ -58,11 +69,11 @@ The fallback is the main reason text wraps differently. For example, `Cutting Co
 
 ## DeckCraft problems
 
-1. **Pictures stored only as SVG are missing.** All 9 slides that have them lose the picture: `WorkingWithAI_MyFirst4Weeks.pptx` slides 2, 5, 7, 8, 34, 35, 62, 88 and `Analyzers.Net.pptx` slide 33. Several are QR codes. Those pictures have an SVG and no PNG fallback, which PowerPoint itself normally writes, so decks saved by other tools are the ones at risk. 38 other slides have an SVG with a fallback. None of them came out blank, but I didn't check each one.
-1. **Donut shapes get a gray center.** The hole is filled gray. It shows clearly in the test deck, `Thread_base_theory_test.pptx` slides 3, 4, 15, 16 and `Quantum Computing for BigData.pptx` slide 31. It darkens what sits behind the hole, and on the Thread slides that changes how the slide reads. `Documentation.pptx` slide 69 and `Remote Mob Programming.pptx` slide 65 have small donuts that were too small to judge.
-1. **Cut-out characters in `Leveling_Up.pptx` get a pale rectangle.** The picture's transparent area is drawn as a pale wash instead of clear. I saw this on the 8 slides I checked. The deck uses PowerPoint's background removal, but other decks that use it render fine, so that is not the whole cause. I didn't find the actual cause.
+1. **Pictures stored only as SVG are missing** (already tracked as [#297](https://github.com/storytold/deckcraft/issues/297), with data added in [#1595](https://github.com/storytold/deckcraft/issues/1595)). All 9 slides that have them lose the picture: `WorkingWithAI_MyFirst4Weeks.pptx` slides 2, 5, 7, 8, 34, 35, 62, 88 and `Analyzers.Net.pptx` slide 33. Several are QR codes. Those pictures have an SVG and no PNG fallback, which PowerPoint itself normally writes, so decks saved by other tools are the ones at risk. 38 other slides have an SVG with a fallback. None of them came out blank, but I didn't check each one.
+1. **Shadows and glows fill the holes of shapes** ([#1596](https://github.com/storytold/deckcraft/issues/1596)). A donut gets a gray center from its shadow, or a colored one from its glow. Frames and "no" symbols do the same. It shows clearly in the test deck, `Thread_base_theory_test.pptx` slides 3, 4, 15, 16 and `Quantum Computing for BigData.pptx` slide 31. It darkens what sits behind the hole, and on the Thread slides that changes how the slide reads. `Documentation.pptx` slide 69 and `Remote Mob Programming.pptx` slide 65 have small donuts that were too small to judge.
+1. **A glow on a picture with transparency fills its whole rectangle** ([#1597](https://github.com/storytold/deckcraft/issues/1597)). This is the pale box around the cut-out characters in `Leveling_Up.pptx`, seen on the 8 slides I checked. Background removal is not the cause: a test picture with no background removal does the same.
 1. **Text that should shrink to fit doesn't, when the file has no stored scale.** In the test deck LibreOffice shrinks it and DeckCraft leaves it overflowing. PowerPoint normally stores a scale, so this may rarely matter in real decks.
-1. **Cousine is drawn in a proportional font**, as in the font table.
+1. **Some missing monospace fonts become proportional** ([#1598](https://github.com/storytold/deckcraft/issues/1598)): Cousine, Source Code Pro and JetBrains Mono.
 
 ## LibreOffice problems
 
