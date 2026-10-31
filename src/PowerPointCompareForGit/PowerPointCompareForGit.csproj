@@ -24,6 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DeterministicIoPackaging" />
     <PackageReference Include="DocumentFormat.OpenXml" />
     <PackageReference Include="StbImageSharp" />
     <PackageReference Include="StbImageWriteSharp" />
