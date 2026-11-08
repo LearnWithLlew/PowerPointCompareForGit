@@ -1,11 +1,11 @@
 ﻿using System.Diagnostics;
-using System.Text;
+using System.Text.RegularExpressions;
 
 namespace PowerPointCompareForGit;
 
 internal sealed record DiffTool(string Name, string Command);
 
-internal static class DiffTools
+internal static partial class DiffTools
 {
     private sealed record KnownTool(string Name, string[] ExecutableNames, string[] StandardLocations, string Arguments);
 
@@ -53,42 +53,10 @@ internal static class DiffTools
 
     // Splits on spaces, keeping "double quoted" parts together, so paths with spaces work.
     internal static IReadOnlyList<string> Split(string command)
-    {
-        var parts = new List<string>();
-        var current = new StringBuilder();
-        var inQuotes = false;
-        var hasPart = false;
-        void EndPart()
-        {
-            if (hasPart)
-            {
-                parts.Add(current.ToString());
-                current.Clear();
-                hasPart = false;
-            }
-        }
+        => CommandPart().Matches(command).Select(part => part.Value.Replace("\"", "")).ToList();
 
-        foreach (var c in command)
-        {
-            if (c == '"')
-            {
-                inQuotes = !inQuotes;
-                hasPart = true;
-            }
-            else if (char.IsWhiteSpace(c) && !inQuotes)
-            {
-                EndPart();
-            }
-            else
-            {
-                current.Append(c);
-                hasPart = true;
-            }
-        }
-
-        EndPart();
-        return parts;
-    }
+    [GeneratedRegex("""(?:"[^"]*"?|[^\s"]+)+""")]
+    private static partial Regex CommandPart();
 
     private static string Quote(string path) => path.Contains(' ') ? $"\"{path}\"" : path;
 
