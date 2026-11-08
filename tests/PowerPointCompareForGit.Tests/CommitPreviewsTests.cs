@@ -69,17 +69,26 @@ public class CommitPreviewsTests
         var after = deck.Repository.ResolveCommit("HEAD");
         var cachedLeft = PathsOf(deck).ForSelective(before, after);
         var cachedRight = PathsOf(deck).ForSelective(after, before);
-        Directory.CreateDirectory(Path.GetDirectoryName(cachedLeft)!);
-        File.WriteAllText(cachedLeft, "already rendered");
-        File.WriteAllText(cachedRight, "already rendered");
+        FakeCachedPreviews(cachedLeft, cachedRight);
 
         new CommitPreviews(deck).RenderSelective(before, after);
 
-        Assert.Equal("already rendered", File.ReadAllText(cachedLeft));
-        Assert.Equal("already rendered", File.ReadAllText(cachedRight));
+        AssertNotRerendered(cachedLeft, cachedRight);
     }
 
     private static PreviewPaths PathsOf(DeckInRepo deck) => new(deck.Repository.Root, deck.RelativePath);
+
+    private static void FakeCachedPreviews(params string[] paths)
+    {
+        foreach (var path in paths)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "already rendered");
+        }
+    }
+
+    private static void AssertNotRerendered(params string[] cachedPreviews)
+        => Assert.All(cachedPreviews, cached => Assert.Equal("already rendered", File.ReadAllText(cached)));
 
     private static void EditSecondSlide(string deckPath)
     {
@@ -98,11 +107,10 @@ public class CommitPreviewsTests
         var deck = DeckInRepo.At(deckPath);
         var sha = deck.Repository.ResolveCommit("HEAD");
         var cached = PathsOf(deck).For(sha);
-        Directory.CreateDirectory(Path.GetDirectoryName(cached)!);
-        File.WriteAllText(cached, "already rendered");
+        FakeCachedPreviews(cached);
 
         Assert.Equal(cached, new CommitPreviews(deck).RenderCommit(sha));
-        Assert.Equal("already rendered", File.ReadAllText(cached));
+        AssertNotRerendered(cached);
     }
 
     [Fact]
@@ -139,13 +147,12 @@ public class CommitPreviewsTests
         var deck = DeckInRepo.At(deckPath);
         var sha = deck.Repository.ResolveCommit("HEAD");
         var cached = PathsOf(deck).ForPage(sha, 2);
-        Directory.CreateDirectory(Path.GetDirectoryName(cached)!);
-        File.WriteAllText(cached, "already rendered");
+        FakeCachedPreviews(cached);
 
         var preview = Assert.Single(new CommitPreviews(deck).RenderPages(sha, new PageRange(2, 2)));
 
         Assert.Equal(cached, preview);
-        Assert.Equal("already rendered", File.ReadAllText(cached));
+        AssertNotRerendered(cached);
     }
 
     [Fact]
