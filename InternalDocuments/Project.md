@@ -1,4 +1,4 @@
-# PowerPoint for Git Repos
+﻿# PowerPoint for Git Repos
 
 A dotnet tool that lets you see what changed in a PowerPoint deck across git commits. It renders each version of a `.pptx` to a single tall PNG (all slides stacked) and opens two versions side by side in your diff tool.
 
@@ -17,6 +17,8 @@ CreatePowerpointCheckpoint file.pptx --pages 40               # only slide 40, c
 CreatePowerpointCheckpoint file.pptx --pages 2-25             # only slides 2 to 25
 CreatePowerpointCheckpoint file.pptx --renderer LibreOffice   # draw with LibreOffice instead of DeckCraft
 CreatePowerpointCheckpoint --reset                            # clears local settings
+CreatePowerpointCheckpoint --clear-cache                      # deletes the cached previews of the current repo
+CreatePowerpointCheckpoint file.pptx --clear-cache            # deletes the cached previews of the repo holding file.pptx
 ```
 
 ### Output
@@ -61,7 +63,14 @@ deckcraft-cli was not found.
 - Mac: the CLI is a separate zip, and the app comes from `brew install --cask deckcraft` unless `/Applications/DeckCraft.app` exists. A failed app install is only a warning, because rendering needs just the CLI.
 - A missing app alone never prompts.
 - If input is piped (e.g. CI), it does not prompt; it errors with where to get it and the other options.
-- The tool doesn't update an installed copy.
+
+### Updating DeckCraft
+- At most once a day, a DeckCraft run asks GitHub for the latest release. The time of the last check is in `~/.createpowerpointcheckpoint/deckcraft-update-check.txt`.
+- If it's newer than `deckcraft-cli --version`, it asks before updating. With piped input it only prints a notice on stderr.
+- A failed check (e.g. offline) is silent and waits for the next day.
+- After an update, the current repo's DeckCraft previews are deleted, because the old version drew them and a compare would show its fixes as changes. Other repos keep theirs until `--clear-cache`.
+- Only the copy in `~/.createpowerpointcheckpoint/deckcraft/` is updated. One on PATH or at `deckCraftCliPath` is the user's to manage, and so is the Mac app (`brew upgrade --cask deckcraft`).
+- The check runs before any preview is read, so an update can't delete a preview the same run is about to open.
 
 ### LibreOffice
 Runs in headless mode:
@@ -115,11 +124,11 @@ Previews are cached inside the repo's `.git/` folder, so git never tracks them a
 These are the LibreOffice names. DeckCraft adds `.deckcraft` after the version (`my.pptx.<shortsha>.deckcraft.page.1.png`), so the two renderers' previews never overwrite each other.
 
 - Uses the short (7-char) SHA so file names stay readable in the diff tool.
-- The cache persists, so each commit is rendered only once.
+- The cache persists, so each commit is rendered only once. `--clear-cache` deletes the whole `.git/pptx-previews/` folder.
 - `working.png` is overwritten each run, and so are the working copy's page files.
 
 ## Settings
-Prompts (diff tool, DeckCraft install, LibreOffice install) go to stderr, so stdout stays a clean list of PNG paths.
+Prompts (diff tool, DeckCraft install and update, LibreOffice install) go to stderr, so stdout stays a clean list of PNG paths.
 
 Stored in `~/.createpowerpointcheckpoint/settings.json` (same pattern as SafeQuery's `~/.safequery/settings.json`).
 - One global setting per user, not per repo.

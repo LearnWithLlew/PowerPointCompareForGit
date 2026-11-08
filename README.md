@@ -1,4 +1,4 @@
-# ![](https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/icon.png) PowerPointCompareForGit
+﻿# ![](https://raw.githubusercontent.com/LearnWithLlew/PowerPointCompareForGit/main/icon.png) PowerPointCompareForGit
 
 [![build-and-test](https://github.com/LearnWithLlew/PowerPointCompareForGit/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/LearnWithLlew/PowerPointCompareForGit/actions/workflows/build-and-test.yml)
 [![NuGet](https://img.shields.io/nuget/v/PowerPointCompareForGit.svg)](https://www.nuget.org/packages/PowerPointCompareForGit)
@@ -59,6 +59,9 @@ CreatePowerpointCheckpoint talk.pptx --renderer LibreOffice
 
 # clear local settings
 CreatePowerpointCheckpoint --reset
+
+# delete the cached previews of this repo
+CreatePowerpointCheckpoint --clear-cache
 ```
 
 `--selective` can't be combined with `--pages`.
@@ -69,6 +72,7 @@ CreatePowerpointCheckpoint --reset
 - If no slide looks different, nothing opens and the terminal says so.
 - Speaker notes, animations and transitions aren't in the images, so changes to them won't show.
 - Previews are cached in `.git/pptx-previews/`, so git never tracks them and each commit is rendered only once.
+- Once a day it checks for a newer DeckCraft and asks before updating.
 
 ## For AI agents
 

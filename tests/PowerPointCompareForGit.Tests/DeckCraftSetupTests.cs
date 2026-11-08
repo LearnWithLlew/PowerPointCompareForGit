@@ -67,6 +67,58 @@ public class DeckCraftSetupTests
         Assert.StartsWith("deckcraft-cli still wasn't found", error.Message);
     }
 
+    [Fact]
+    public void UpdateCheckIsDueOncePerDay()
+    {
+        using var folder = new TestFolder();
+        var stamp = folder.Combine("deckcraft-update-check.txt");
+        Assert.True(DeckCraftSetup.UpdateCheckIsDue(stamp, DateTime.UtcNow));
+
+        File.WriteAllText(stamp, "");
+        var checkedAt = File.GetLastWriteTimeUtc(stamp);
+
+        Assert.False(DeckCraftSetup.UpdateCheckIsDue(stamp, checkedAt.AddHours(23)));
+        Assert.True(DeckCraftSetup.UpdateCheckIsDue(stamp, checkedAt.AddDays(1)));
+    }
+
+    [Fact]
+    public void ReadsTheInstalledVersion()
+    {
+        Assert.Equal(new Version(0, 13, 1), DeckCraftSetup.InstalledVersion("deckcraft-cli 0.13.1\n"));
+        Assert.Null(DeckCraftSetup.InstalledVersion("unexpected"));
+    }
+
+    [Fact]
+    public void SameOrOlderVersionIsNotOffered()
+    {
+        var prompt = new StringWriter();
+
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "0.16.0", new StringReader("1\n"), prompt, false));
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "0.15.1", new StringReader("1\n"), prompt, false));
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "not-a-version", new StringReader("1\n"), prompt, false));
+        Assert.Equal("", prompt.ToString());
+    }
+
+    [Fact]
+    public void NewerVersionIsOffered()
+    {
+        var prompt = new StringWriter();
+
+        Assert.True(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new StringReader("1\n"), prompt, false));
+        Assert.StartsWith("DeckCraft 0.16.0 is available (you have 0.13.1).", prompt.ToString());
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new StringReader("2\n"), new StringWriter(), false));
+    }
+
+    [Fact]
+    public void PipedInputOnlyNotesTheUpdate()
+    {
+        var prompt = new StringWriter();
+
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new StringReader("1\n"), prompt, true));
+        Assert.Contains("Run CreatePowerpointCheckpoint in a terminal to update it.", prompt.ToString());
+        Assert.DoesNotContain("Choice:", prompt.ToString());
+    }
+
     public static TheoryData<OSPlatform, Architecture, string> Assets => new()
     {
         { OSPlatform.OSX, Architecture.Arm64, "deckcraft-cli-1.2.3-macos-universal.zip" },

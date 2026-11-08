@@ -152,7 +152,7 @@ internal static class CommitPreviews
             : new LibreOfficeRenderer(FindLibreOffice());
 
     // Prompts go to stderr so stdout stays a clean list of PNG paths.
-    private static string FindDeckCraft()
+    internal static string FindDeckCraft()
     {
         var configuredPath = Settings.Load(Settings.DefaultPath()).DeckCraftCliPath;
         return DeckCraftSetup.Resolve(

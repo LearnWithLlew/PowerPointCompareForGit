@@ -102,4 +102,39 @@ public class PreviewPathsTests
 
         Assert.StartsWith(Path.Combine(RepoRoot, ".git", "pptx-previews"), path);
     }
+
+    [Fact]
+    public void ClearDeletesTheWholeCache()
+    {
+        using var folder = new TestFolder();
+        var preview = PreviewPaths.For(folder.Path, "decks/my.pptx", "0123456789abcdef");
+        Directory.CreateDirectory(Path.GetDirectoryName(preview)!);
+        File.WriteAllText(preview, "");
+
+        Assert.True(PreviewPaths.Clear(folder.Path));
+        Assert.False(Directory.Exists(PreviewPaths.CacheFolder(folder.Path)));
+        Assert.False(PreviewPaths.Clear(folder.Path));
+    }
+
+    [Fact]
+    public void ClearDeckCraftKeepsLibreOfficePreviews()
+    {
+        using var folder = new TestFolder();
+        string[] deckCraft =
+        [
+            PreviewPaths.For(folder.Path, "decks/my.pptx", "0123456789abcdef", Renderer.DeckCraft),
+            PreviewPaths.ForPage(folder.Path, "decks/my.pptx", PreviewPaths.WorkingCopy, 2, Renderer.DeckCraft)
+        ];
+        var libreOffice = PreviewPaths.For(folder.Path, "decks/my.pptx", "0123456789abcdef");
+        foreach (var preview in deckCraft.Append(libreOffice))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(preview)!);
+            File.WriteAllText(preview, "");
+        }
+
+        PreviewPaths.ClearDeckCraft(folder.Path);
+
+        Assert.All(deckCraft, preview => Assert.False(File.Exists(preview)));
+        Assert.True(File.Exists(libreOffice));
+    }
 }

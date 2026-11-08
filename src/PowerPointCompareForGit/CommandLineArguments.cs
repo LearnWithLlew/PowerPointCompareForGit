@@ -4,7 +4,7 @@ namespace PowerPointCompareForGit;
 
 // What the user asked for. Compare is true for --compare, with 0, 1 or 2 shas in CompareShas.
 // Pages is null when the whole deck is wanted.
-internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool Compare, IReadOnlyList<string> CompareShas, PageRange? Pages, Renderer Renderer, bool Reset, bool Selective);
+internal sealed record Request(string? File, IReadOnlyList<string> Commits, bool Compare, IReadOnlyList<string> CompareShas, PageRange? Pages, Renderer Renderer, bool Reset, bool Selective, bool ClearCache);
 
 internal static class CommandLineArguments
 {
@@ -53,6 +53,11 @@ internal static class CommandLineArguments
         Description = "Clear local settings."
     };
 
+    private static readonly Option<bool> ClearCacheOption = new("--clear-cache")
+    {
+        Description = "Delete the cached previews of the repo containing the file (or the current folder)."
+    };
+
     internal static RootCommand CreateRootCommand()
     {
         var rootCommand = new RootCommand($"""
@@ -61,11 +66,11 @@ internal static class CommandLineArguments
             AI agents: see {AgentSkillUrl}
             """)
         {
-            FileArgument, CommitOption, CompareOption, SelectiveOption, PagesOption, RendererOption, ResetOption
+            FileArgument, CommitOption, CompareOption, SelectiveOption, PagesOption, RendererOption, ResetOption, ClearCacheOption
         };
         rootCommand.Validators.Add(result =>
         {
-            if (result.GetResult(ResetOption) is not null)
+            if (result.GetResult(ResetOption) is not null || result.GetResult(ClearCacheOption) is not null)
             {
                 return;
             }
@@ -109,6 +114,7 @@ internal static class CommandLineArguments
             parseResult.GetValue(PagesOption) is { } pages ? PageRange.Parse(pages) : null,
             parseResult.GetValue(RendererOption),
             parseResult.GetValue(ResetOption),
-            parseResult.GetValue(SelectiveOption));
+            parseResult.GetValue(SelectiveOption),
+            parseResult.GetValue(ClearCacheOption));
     }
 }

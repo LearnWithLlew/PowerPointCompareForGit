@@ -39,6 +39,72 @@ internal static class DeckCraftSetup
         return find() ?? throw new InvalidOperationException($"deckcraft-cli still wasn't found after installing. {DeckCraft.NotFoundMessage()}");
     }
 
+    // GitHub is asked at most once a day, so most runs make no network call.
+    internal static bool UpdateCheckIsDue(string stampFile, DateTime utcNow)
+        => !File.Exists(stampFile) || utcNow - File.GetLastWriteTimeUtc(stampFile) >= TimeSpan.FromDays(1);
+
+    // deckcraft-cli --version prints "deckcraft-cli 0.13.1".
+    internal static Version? InstalledVersion(string versionOutput)
+        => Version.TryParse(versionOutput.Trim().Split(' ').Last(), out var version) ? version : null;
+
+    // Asks whether to update when latest is newer. With piped input it only prints a notice.
+    // Returns true when the user chose to update.
+    internal static bool OfferUpdate(Version installed, string latest, TextReader input, TextWriter prompt, bool inputRedirected)
+    {
+        if (!Version.TryParse(latest, out var latestVersion) || latestVersion <= installed)
+        {
+            return false;
+        }
+
+        prompt.WriteLine($"DeckCraft {latest} is available (you have {installed}).");
+        if (inputRedirected)
+        {
+            prompt.WriteLine("Run CreatePowerpointCheckpoint in a terminal to update it.");
+            return false;
+        }
+
+        prompt.WriteLine("1. Update (this repo's cached DeckCraft previews are deleted, since the old version drew them)");
+        prompt.WriteLine("2. Not now");
+        prompt.Write("Choice: ");
+        return input.ReadLine()?.Trim() == "1";
+    }
+
+    // Only updates the copy this tool installed; one on PATH or at deckCraftCliPath is the user's to manage.
+    // Returns true when it updated. A failed check is silent, so working offline is unaffected.
+    internal static bool CheckForUpdate(string cli, TextReader input, TextWriter prompt, bool inputRedirected)
+    {
+        var stampFile = Path.Combine(Path.GetDirectoryName(Settings.DefaultPath())!, "deckcraft-update-check.txt");
+        if (!IsInstalledByUs(cli) || !UpdateCheckIsDue(stampFile, DateTime.UtcNow))
+        {
+            return false;
+        }
+
+        File.WriteAllText(stampFile, DateTime.UtcNow.ToString("O"));
+        string latest;
+        try
+        {
+            using var client = CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+            latest = LatestVersion(client);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException)
+        {
+            return false;
+        }
+
+        var installed = InstalledVersion(ProcessRunner.Run(cli, ["--version"], Path.GetTempPath()).OutputText);
+        if (installed is null || !OfferUpdate(installed, latest, input, prompt, inputRedirected))
+        {
+            return false;
+        }
+
+        Install(prompt);
+        return true;
+    }
+
+    private static bool IsInstalledByUs(string cli)
+        => Path.GetFullPath(cli).StartsWith(Path.GetFullPath(DeckCraft.InstallFolder()) + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+
     // The release file holding deckcraft-cli. On Windows and Linux it holds the app too; on Mac the app is separate.
     internal static string AssetName(string version, OSPlatform os, Architecture architecture)
     {
@@ -118,9 +184,7 @@ internal static class DeckCraftSetup
 
     private static void InstallCli(OSPlatform os, TextWriter progress)
     {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("PowerPointCompareForGit", "1.0"));
-
+        using var client = CreateClient();
         var version = LatestVersion(client);
         var asset = AssetName(version, os, RuntimeInformation.OSArchitecture);
         var download = $"{Releases}/download/v{version}";
@@ -157,6 +221,13 @@ internal static class DeckCraftSetup
         {
             work.Delete(recursive: true);
         }
+    }
+
+    private static HttpClient CreateClient()
+    {
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("PowerPointCompareForGit", "1.0"));
+        return client;
     }
 
     private static string LatestVersion(HttpClient client)

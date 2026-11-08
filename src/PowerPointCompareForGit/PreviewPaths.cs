@@ -23,6 +23,37 @@ internal static class PreviewPaths
     internal static string ForSelective(string repoRoot, string deckPath, string version, string otherVersion, Renderer renderer = Renderer.LibreOffice)
         => Build(repoRoot, deckPath, version, renderer, $".selective-vs.{Label(otherVersion)}");
 
+    // Every preview of every deck in the repo is somewhere under here.
+    internal static string CacheFolder(string repoRoot) => Path.Combine(Path.GetFullPath(repoRoot), ".git", "pptx-previews");
+
+    // Deletes the whole cache. Returns false when there was nothing to delete.
+    internal static bool Clear(string repoRoot)
+    {
+        var folder = CacheFolder(repoRoot);
+        if (!Directory.Exists(folder))
+        {
+            return false;
+        }
+
+        Directory.Delete(folder, recursive: true);
+        return true;
+    }
+
+    // Deletes only DeckCraft's previews, e.g. after DeckCraft is updated, leaving LibreOffice's.
+    internal static void ClearDeckCraft(string repoRoot)
+    {
+        var folder = CacheFolder(repoRoot);
+        if (!Directory.Exists(folder))
+        {
+            return;
+        }
+
+        foreach (var preview in Directory.EnumerateFiles(folder, "*.deckcraft*.png", SearchOption.AllDirectories))
+        {
+            File.Delete(preview);
+        }
+    }
+
     private static string Label(string version)
         => version == WorkingCopy ? WorkingCopy : version[..Math.Min(ShortShaLength, version.Length)];
 
@@ -37,7 +68,7 @@ internal static class PreviewPaths
         }
 
         var rendererLabel = renderer == Renderer.LibreOffice ? "" : $".{renderer.ToString().ToLowerInvariant()}";
-        var folder = Path.Combine(root, ".git", "pptx-previews", Path.GetDirectoryName(relativeDeck) ?? "");
+        var folder = Path.Combine(CacheFolder(root), Path.GetDirectoryName(relativeDeck) ?? "");
         return Path.Combine(folder, $"{Path.GetFileName(deck)}.{Label(version)}{rendererLabel}{suffix}.png");
     }
 }

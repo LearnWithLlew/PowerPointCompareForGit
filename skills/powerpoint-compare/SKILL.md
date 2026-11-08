@@ -1,4 +1,4 @@
----
+﻿---
 name: powerpoint-compare
 description: See what changed in a PowerPoint (.pptx) deck across git commits by rendering versions to PNG and opening them in a diff tool, using the CreatePowerpointCheckpoint dotnet tool. Use when the user asks what changed in a .pptx, wants to compare deck versions, or wants slide previews for a commit.
 ---
@@ -31,6 +31,7 @@ CreatePowerpointCheckpoint deck.pptx --pages 2-25             # only slides 2 to
 CreatePowerpointCheckpoint deck.pptx --compare --pages 2-25   # compare only those slides, stitched into one PNG per version
 CreatePowerpointCheckpoint deck.pptx --renderer LibreOffice   # draw with LibreOffice instead of DeckCraft
 CreatePowerpointCheckpoint --reset                            # delete the user's settings
+CreatePowerpointCheckpoint --clear-cache                      # delete this repo's cached previews
 ```
 
 - `--commit` and `--compare` can't be combined. `--compare` takes at most two shas.
@@ -52,4 +53,5 @@ CreatePowerpointCheckpoint --reset                            # delete the user'
 
 - Don't run `--reset` unless the user asks; it deletes their diff-tool choice.
 - The tool never creates commits. Don't commit or stash the user's work to make a comparison possible.
+- A notice that a newer DeckCraft is available is on stderr. Tell the user; they update by running the tool in a terminal.
 - When input is piped (as in most agent shells), the tool won't prompt for a diff tool; it errors with where to set it (`~/.createpowerpointcheckpoint/settings.json`). Ask the user which diff tool they want rather than editing that file on your own.

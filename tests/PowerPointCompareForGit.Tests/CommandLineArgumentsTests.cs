@@ -132,6 +132,17 @@ public class CommandLineArgumentsTests
     }
 
     [Fact]
+    public void ClearCacheNeedsNoFile()
+    {
+        var request = Parse("--clear-cache");
+
+        Assert.True(request.ClearCache);
+        Assert.Null(request.File);
+        Assert.True(Parse("deck.pptx", "--clear-cache").ClearCache);
+        Assert.False(Parse("deck.pptx").ClearCache);
+    }
+
+    [Fact]
     public void FileIsRequired()
     {
         Assert.Contains("A .pptx file is required.", Errors("--compare"));

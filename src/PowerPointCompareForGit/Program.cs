@@ -14,6 +14,10 @@ public static class Program
                 {
                     Reset(Settings.DefaultPath());
                 }
+                else if (request.ClearCache)
+                {
+                    ClearCache(request.File ?? ".");
+                }
                 else if (request.Compare)
                 {
                     Compare(request);
@@ -51,12 +55,33 @@ public static class Program
         }
     }
 
+    // path is the deck or any folder in the repo.
+    private static void ClearCache(string path)
+    {
+        var root = GitRepository.Containing(path).Root;
+        var folder = PreviewPaths.CacheFolder(root);
+        Console.WriteLine(PreviewPaths.Clear(root)
+            ? $"Deleted {folder}"
+            : $"No cached previews to delete ({folder} does not exist).");
+    }
+
+    // Runs before any preview is read, so an update can't delete a preview this run is about to open.
+    private static void CheckForDeckCraftUpdate(GitRepository repository, Renderer renderer)
+    {
+        if (renderer == Renderer.DeckCraft
+            && DeckCraftSetup.CheckForUpdate(CommitPreviews.FindDeckCraft(), Console.In, Console.Error, Console.IsInputRedirected))
+        {
+            PreviewPaths.ClearDeckCraft(repository.Root);
+        }
+    }
+
     // Renders both versions, prints their paths (older first) and opens them in the diff tool.
     private static void Compare(Request request)
     {
         var deckPath = request.File!;
         var repository = GitRepository.Containing(deckPath);
         var relativePath = repository.RelativePath(deckPath);
+        CheckForDeckCraftUpdate(repository, request.Renderer);
         var (left, right) = ComparePlan.Choose(repository, relativePath, request.CompareShas);
         if (request.Selective)
         {
@@ -109,6 +134,7 @@ public static class Program
         var deckPath = request.File!;
         var repository = GitRepository.Containing(deckPath);
         var relativePath = repository.RelativePath(deckPath);
+        CheckForDeckCraftUpdate(repository, request.Renderer);
 
         IEnumerable<string> RenderCommit(string sha) => request.Pages is { } pages
             ? CommitPreviews.RenderPages(repository, relativePath, deckPath, sha, pages, request.Renderer)
