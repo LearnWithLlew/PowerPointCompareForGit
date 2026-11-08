@@ -1,13 +1,9 @@
-﻿using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Presentation;
-using A = DocumentFormat.OpenXml.Drawing;
-
-namespace PowerPointCompareForGit.Tests;
+﻿namespace PowerPointCompareForGit.Tests;
 
 // Runs real LibreOffice, which must be installed (CI installs it).
 public class CommitPreviewsTests
 {
-    private const int SlideHeight = 720;
+    internal const int SlideHeight = 720;
 
     [Fact]
     public void RendersEachCommitSeparately()
@@ -28,79 +24,6 @@ public class CommitPreviewsTests
     }
 
     [Fact]
-    public void SelectiveDrawsOnlyTheChangedSlideOfEachVersion()
-    {
-        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var deck = DeckInRepo.At(deckPath);
-        var sha = deck.Repository.ResolveCommit("HEAD");
-        EditSecondSlide(deckPath);
-
-        var previews = new CommitPreviews(deck).RenderSelective(sha, PreviewPaths.WorkingCopy);
-
-        Assert.Equal([new SlideRow(2, 2)], previews.Alignment.Rows);
-        var (left, right) = previews.Images!.Value;
-        Assert.Equal(PathsOf(deck).ForSelective(sha, PreviewPaths.WorkingCopy), left);
-        Assert.Equal(PathsOf(deck).ForSelective(PreviewPaths.WorkingCopy, sha), right);
-        Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(left).Height);
-        Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(right).Height);
-    }
-
-    [Fact]
-    public void SelectiveWithNoChangesHasNoImages()
-    {
-        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var deck = DeckInRepo.At(deckPath);
-        var sha = deck.Repository.ResolveCommit("HEAD");
-
-        var previews = new CommitPreviews(deck).RenderSelective(sha, PreviewPaths.WorkingCopy);
-
-        Assert.Empty(previews.Alignment.Rows);
-        Assert.Null(previews.Images);
-    }
-
-    [Fact]
-    public void SelectiveReusesCachedPreviewsBetweenCommits()
-    {
-        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var deck = DeckInRepo.At(deckPath);
-        var before = deck.Repository.ResolveCommit("HEAD");
-        EditSecondSlide(deckPath);
-        GitRepositoryTests.Git(folder.Path, "commit", "-q", "-am", "edit");
-        var after = deck.Repository.ResolveCommit("HEAD");
-        var cachedLeft = PathsOf(deck).ForSelective(before, after);
-        var cachedRight = PathsOf(deck).ForSelective(after, before);
-        FakeCachedPreviews(cachedLeft, cachedRight);
-
-        new CommitPreviews(deck).RenderSelective(before, after);
-
-        AssertNotRerendered(cachedLeft, cachedRight);
-    }
-
-    private static PreviewPaths PathsOf(DeckInRepo deck) => new(deck.Repository.Root, deck.RelativePath);
-
-    private static void FakeCachedPreviews(params string[] paths)
-    {
-        foreach (var path in paths)
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, "already rendered");
-        }
-    }
-
-    private static void AssertNotRerendered(params string[] cachedPreviews)
-        => Assert.All(cachedPreviews, cached => Assert.Equal("already rendered", File.ReadAllText(cached)));
-
-    private static void EditSecondSlide(string deckPath)
-    {
-        using var deck = PresentationDocument.Open(deckPath, true);
-        var presentationPart = deck.PresentationPart!;
-        var slideId = presentationPart.Presentation!.SlideIdList!.Elements<SlideId>().ElementAt(1);
-        var slide = (SlidePart)presentationPart.GetPartById(slideId.RelationshipId!);
-        slide.Slide!.Descendants<A.Text>().First().Text = "Edited";
-        slide.Slide.Save();
-    }
-
-    [Fact]
     public void ReusesCachedPreview()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
@@ -111,73 +34,6 @@ public class CommitPreviewsTests
 
         Assert.Equal(cached, new CommitPreviews(deck).RenderCommit(sha));
         AssertNotRerendered(cached);
-    }
-
-    [Fact]
-    public void RangeRendersOnePngPerPageClampedToTheDeck()
-    {
-        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var deck = DeckInRepo.At(deckPath);
-        var sha = deck.Repository.ResolveCommit("HEAD");
-
-        var previews = new CommitPreviews(deck).RenderPages(sha, new PageRange(2, 25));
-
-        Assert.Equal(
-            [PathsOf(deck).ForPage(sha, 2), PathsOf(deck).ForPage(sha, 3)],
-            previews);
-        Assert.All(previews, preview => Assert.Equal(SlideHeight, RgbaImage.LoadPng(preview).Height));
-    }
-
-    [Fact]
-    public void PagePastTheEndRendersTheLastSlide()
-    {
-        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var deck = DeckInRepo.At(deckPath);
-        var sha = deck.Repository.ResolveCommit("HEAD");
-
-        var preview = Assert.Single(new CommitPreviews(deck).RenderPages(sha, new PageRange(40, 40)));
-
-        Assert.Equal(PathsOf(deck).ForPage(sha, 3), preview);
-    }
-
-    [Fact]
-    public void ReusesCachedPage()
-    {
-        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var deck = DeckInRepo.At(deckPath);
-        var sha = deck.Repository.ResolveCommit("HEAD");
-        var cached = PathsOf(deck).ForPage(sha, 2);
-        FakeCachedPreviews(cached);
-
-        var preview = Assert.Single(new CommitPreviews(deck).RenderPages(sha, new PageRange(2, 2)));
-
-        Assert.Equal(cached, preview);
-        AssertNotRerendered(cached);
-    }
-
-    [Fact]
-    public void CompareStitchesARange()
-    {
-        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var deck = DeckInRepo.At(deckPath);
-        var sha = deck.Repository.ResolveCommit("HEAD");
-
-        var preview = new CommitPreviews(deck).RenderForCompare(sha, new PageRange(2, 25));
-
-        Assert.Equal(PathsOf(deck).ForPages(sha, new PageRange(2, 3)), preview);
-        Assert.Equal(2 * (SlideStitcher.BandHeight + SlideHeight), RgbaImage.LoadPng(preview).Height);
-    }
-
-    [Fact]
-    public void CompareOfOnePageUsesThePageFile()
-    {
-        using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var deck = DeckInRepo.At(deckPath);
-
-        var preview = new CommitPreviews(deck).RenderForCompare(PreviewPaths.WorkingCopy, new PageRange(40, 50));
-
-        Assert.Equal(PathsOf(deck).ForPage(PreviewPaths.WorkingCopy, 3), preview);
-        Assert.Equal(SlideHeight, RgbaImage.LoadPng(preview).Height);
     }
 
     [Fact]
@@ -207,4 +63,18 @@ public class CommitPreviewsTests
         Assert.Equal(stale, preview);
         Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(preview).Height);
     }
+
+    internal static PreviewPaths PathsOf(DeckInRepo deck) => new(deck.Repository.Root, deck.RelativePath);
+
+    internal static void FakeCachedPreviews(params string[] paths)
+    {
+        foreach (var path in paths)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "already rendered");
+        }
+    }
+
+    internal static void AssertNotRerendered(params string[] cachedPreviews)
+        => Assert.All(cachedPreviews, cached => Assert.Equal("already rendered", File.ReadAllText(cached)));
 }
