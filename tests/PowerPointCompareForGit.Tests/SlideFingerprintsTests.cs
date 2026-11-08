@@ -106,7 +106,7 @@ public class SlideFingerprintsTests
         var baseline = Edit(folder, deck => AddField(deck, "datetimeFigureOut", "10/5/26"));
         var fingerprints = SlideFingerprints.Of(baseline);
 
-        var resaved = Edit(folder, deck => SetFieldText(deck, "10/6/26"), baseline, "resaved.pptx");
+        var resaved = Edit(folder, deck => SetFieldText(deck, "10/6/26"), baseline);
 
         Assert.Equal(fingerprints, SlideFingerprints.Of(resaved));
     }
@@ -118,7 +118,7 @@ public class SlideFingerprintsTests
         var baseline = Edit(folder, deck => AddField(deck, "other", "before"));
         var fingerprints = SlideFingerprints.Of(baseline);
 
-        var edited = Edit(folder, deck => SetFieldText(deck, "after"), baseline, "edited2.pptx");
+        var edited = Edit(folder, deck => SetFieldText(deck, "after"), baseline);
 
         Assert.NotEqual(fingerprints, SlideFingerprints.Of(edited));
     }
@@ -143,7 +143,7 @@ public class SlideFingerprintsTests
             var slide = Slide(deck, 0);
             slide.Slide!.Descendants<A.Run>().First().RunProperties = new A.RunProperties();
             slide.Slide.Save();
-        }, flagged, "cleared.pptx");
+        }, flagged);
         Assert.Equal(SlideFingerprints.Of(withoutFlags), SlideFingerprints.Of(flagged));
     }
 
@@ -155,7 +155,7 @@ public class SlideFingerprintsTests
         const string declaredHigh = "<p:extLst xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:q=\"urn:q\"><p:ext uri=\"x\"><q:y /></p:ext></p:extLst>";
 
         var low = Edit(folder, deck => AddSlideExtension(deck, declaredLow));
-        var high = Edit(folder, deck => AddSlideExtension(deck, declaredHigh), TestFolder.ThreeSlideDeck, "high.pptx");
+        var high = Edit(folder, deck => AddSlideExtension(deck, declaredHigh));
 
         Assert.Equal(SlideFingerprints.Of(low), SlideFingerprints.Of(high));
     }
@@ -180,8 +180,8 @@ public class SlideFingerprintsTests
         var png = PngOf(new Rgba(255, 0, 0), folder);
 
         var fingerprints = SlideFingerprints.Of(Edit(folder, deck => AddPicture(deck, png)));
-        var recompressed = SlideFingerprints.Of(Edit(folder, deck => AddPicture(deck, Recompress(png)), TestFolder.ThreeSlideDeck, "recompressed.pptx"));
-        var otherPixels = SlideFingerprints.Of(Edit(folder, deck => AddPicture(deck, PngOf(new Rgba(0, 0, 255), folder)), TestFolder.ThreeSlideDeck, "other.pptx"));
+        var recompressed = SlideFingerprints.Of(Edit(folder, deck => AddPicture(deck, Recompress(png))));
+        var otherPixels = SlideFingerprints.Of(Edit(folder, deck => AddPicture(deck, PngOf(new Rgba(0, 0, 255), folder))));
 
         Assert.Equal(fingerprints, recompressed);
         Assert.NotEqual(fingerprints[0], otherPixels[0]);
@@ -218,9 +218,9 @@ public class SlideFingerprintsTests
         Assert.All(SlideFingerprints.Of(resized).Zip(original), pair => Assert.NotEqual(pair.Second, pair.First));
     }
 
-    private static string Edit(TestFolder folder, Action<PresentationDocument> edit, string? source = null, string name = "edited.pptx")
+    private static string Edit(TestFolder folder, Action<PresentationDocument> edit, string? source = null)
     {
-        var path = folder.Combine(name);
+        var path = folder.Combine($"{Guid.NewGuid():N}.pptx");
         File.Copy(source ?? TestFolder.ThreeSlideDeck, path);
         using (var deck = PresentationDocument.Open(path, true))
         {
