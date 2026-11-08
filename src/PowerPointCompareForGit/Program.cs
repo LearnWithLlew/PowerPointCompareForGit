@@ -72,23 +72,24 @@ public static class Program
             : $"No cached previews to delete ({folder} does not exist).");
     }
 
-    // Runs before any preview is read, so an update can't delete a preview this run is about to open.
-    private static void CheckForDeckCraftUpdate(GitRepository repository, Renderer renderer)
+    // Checks for a DeckCraft update first, so an update can't delete a preview this run is about to open.
+    private static CommitPreviews PreviewsOf(DeckInRepo deck, Renderer renderer)
     {
         if (renderer == Renderer.DeckCraft
             && DeckCraftSetup.CheckForUpdate(CommitPreviews.FindDeckCraft(), UserConsole.Standard()))
         {
-            PreviewPaths.ClearDeckCraft(repository.Root);
+            PreviewPaths.ClearDeckCraft(deck.Repository.Root);
         }
+
+        return new CommitPreviews(deck, renderer);
     }
 
     // Renders both versions, prints their paths (older first) and opens them in the diff tool.
     private static void Compare(Request request)
     {
         var deck = DeckInRepo.At(request.File!);
-        CheckForDeckCraftUpdate(deck.Repository, request.Renderer);
+        var previews = PreviewsOf(deck, request.Renderer);
         var (left, right) = ComparePlan.Choose(deck.Repository, deck.RelativePath, request.CompareShas);
-        var previews = new CommitPreviews(deck, request.Renderer);
         if (request.Selective)
         {
             CompareSelective(previews, left, right);
@@ -99,12 +100,7 @@ public static class Program
             ? previews.RenderForCompare(version, pages)
             : previews.Render(version);
 
-        var leftPreview = RenderVersion(left);
-        var rightPreview = RenderVersion(right);
-        Console.WriteLine(leftPreview);
-        Console.WriteLine(rightPreview);
-
-        OpenInDiffTool(leftPreview, rightPreview);
+        PrintAndOpenInDiffTool(RenderVersion(left), RenderVersion(right));
     }
 
     // Opens only the slides that changed. Anything the images can't show goes to stderr, so stdout stays a clean list of PNG paths.
@@ -118,17 +114,17 @@ public static class Program
 
         if (selective.Images is { } images)
         {
-            Console.WriteLine(images.Left);
-            Console.WriteLine(images.Right);
-            OpenInDiffTool(images.Left, images.Right);
+            PrintAndOpenInDiffTool(images.Left, images.Right);
         }
     }
 
     private static string VersionName(string version)
         => version == PreviewPaths.WorkingCopy ? "the working copy" : version[..7];
 
-    private static void OpenInDiffTool(string leftPreview, string rightPreview)
+    private static void PrintAndOpenInDiffTool(string leftPreview, string rightPreview)
     {
+        Console.WriteLine(leftPreview);
+        Console.WriteLine(rightPreview);
         var diffTool = DiffToolSetup.Resolve(Settings.DefaultPath(), DiffTools.Detect(), UserConsole.Standard());
         DiffTools.Launch(diffTool, leftPreview, rightPreview);
     }
@@ -138,30 +134,24 @@ public static class Program
     private static IEnumerable<string> RenderRequestedCommits(Request request)
     {
         var deck = DeckInRepo.At(request.File!);
-        CheckForDeckCraftUpdate(deck.Repository, request.Renderer);
-        var previews = new CommitPreviews(deck, request.Renderer);
+        var previews = PreviewsOf(deck, request.Renderer);
 
         IEnumerable<string> RenderCommit(string sha) => request.Pages is { } pages
             ? previews.RenderPages(sha, pages)
             : [previews.RenderCommit(sha)];
 
+        return RequestedCommits(request, deck).SelectMany(RenderCommit);
+    }
+
+    // Resolves every listed commit before any is rendered, so a typo fails fast.
+    private static IReadOnlyList<string> RequestedCommits(Request request, DeckInRepo deck)
+    {
         if (request.Commits.Count > 0)
         {
-            // Resolve every commit before rendering any, so a typo fails fast.
-            var commits = request.Commits.Select(deck.Repository.ResolveCommit).ToList();
-            foreach (var preview in commits.SelectMany(RenderCommit))
-            {
-                yield return preview;
-            }
-
-            yield break;
+            return request.Commits.Select(deck.Repository.ResolveCommit).ToList();
         }
 
-        var lastChange = deck.Repository.LastCommitThatChanged(deck.RelativePath)
-            ?? throw new InvalidOperationException($"{deck.RelativePath} has not been committed yet.");
-        foreach (var preview in RenderCommit(lastChange))
-        {
-            yield return preview;
-        }
+        return [deck.Repository.LastCommitThatChanged(deck.RelativePath)
+            ?? throw new InvalidOperationException($"{deck.RelativePath} has not been committed yet.")];
     }
 }
