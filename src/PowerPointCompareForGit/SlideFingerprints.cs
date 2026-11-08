@@ -61,6 +61,15 @@ internal static partial class SlideFingerprints
         // A part can lead back to itself, for example a chart's parts that refer to each other.
         known[part.Uri] = "";
 
+        var targets = Targets(part, known);
+        var drawnFrom = string.Join(",", targets.Values.Order(StringComparer.Ordinal));
+        fingerprint = Hash($"{Content(part, targets)}|{drawnFrom}");
+        known[part.Uri] = fingerprint;
+        return fingerprint;
+    }
+
+    private static Dictionary<string, string> Targets(OpenXmlPart part, Dictionary<Uri, string> known)
+    {
         var targets = new Dictionary<string, string>();
         foreach (var child in part.Parts.Where(child => Draws(part, child.OpenXmlPart)))
         {
@@ -78,10 +87,7 @@ internal static partial class SlideFingerprints
             targets[reference.Id] = Hash(data);
         }
 
-        var drawnFrom = string.Join(",", targets.Values.Order(StringComparer.Ordinal));
-        fingerprint = Hash($"{Content(part, targets)}|{drawnFrom}");
-        known[part.Uri] = fingerprint;
-        return fingerprint;
+        return targets;
     }
 
     // Speaker notes and comments don't appear in the image, a link to another slide doesn't draw that slide,
@@ -103,7 +109,11 @@ internal static partial class SlideFingerprints
             return Hash(stream);
         }
 
-        var root = XElement.Load(stream, LoadOptions.PreserveWhitespace);
+        return CanonicalXml(XElement.Load(stream, LoadOptions.PreserveWhitespace), targets);
+    }
+
+    private static string CanonicalXml(XElement root, Dictionary<string, string> targets)
+    {
         root.Elements(PresentationMl + "sldLayoutIdLst").Remove();
         RemoveAnimations(root);
         foreach (var attribute in root.DescendantsAndSelf().Attributes().Where(attribute => attribute.Name.Namespace == Relationships))
@@ -141,10 +151,7 @@ internal static partial class SlideFingerprints
     private static void AppendCanonical(XElement element, StringBuilder canonical)
     {
         canonical.Append('<').Append(element.Name);
-        var attributes = element.Attributes()
-            .Where(attribute => !attribute.IsNamespaceDeclaration && !EditorFlags.Contains(attribute.Name.LocalName))
-            .OrderBy(attribute => attribute.Name.ToString(), StringComparer.Ordinal);
-        foreach (var attribute in attributes)
+        foreach (var attribute in DrawnAttributes(element))
         {
             canonical.Append(' ').Append(attribute.Name).Append("=\"").Append(Guid().Replace(attribute.Value, "guid")).Append('"');
         }
@@ -152,19 +159,29 @@ internal static partial class SlideFingerprints
         canonical.Append('>');
         foreach (var node in element.Nodes())
         {
-            switch (node)
-            {
-                case XElement child:
-                    AppendCanonical(child, canonical);
-                    break;
-                // Space between elements means nothing, but inside a text run it's drawn.
-                case XText text when element.Name == DrawingMl + "t" || !string.IsNullOrWhiteSpace(text.Value):
-                    canonical.Append(text.Value);
-                    break;
-            }
+            AppendNode(node, element, canonical);
         }
 
         canonical.Append("</>");
+    }
+
+    private static IEnumerable<XAttribute> DrawnAttributes(XElement element)
+        => element.Attributes()
+            .Where(attribute => !attribute.IsNamespaceDeclaration && !EditorFlags.Contains(attribute.Name.LocalName))
+            .OrderBy(attribute => attribute.Name.ToString(), StringComparer.Ordinal);
+
+    private static void AppendNode(XNode node, XElement parent, StringBuilder canonical)
+    {
+        switch (node)
+        {
+            case XElement child:
+                AppendCanonical(child, canonical);
+                break;
+            // Space between elements means nothing, but inside a text run it's drawn.
+            case XText text when parent.Name == DrawingMl + "t" || !string.IsNullOrWhiteSpace(text.Value):
+                canonical.Append(text.Value);
+                break;
+        }
     }
 
     // Normalizing replaces these too, but not when it fails, and a GUID is never drawn.
