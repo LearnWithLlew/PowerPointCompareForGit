@@ -2,8 +2,9 @@
 
 internal sealed record DeckInRepo(GitRepository Repository, string RelativePath, string WorkingCopyPath)
 {
+    // Made absolute because renderers run in a temp folder, where a relative path would not be found.
     internal static DeckInRepo At(string deckPath)
-        => new(GitRepository.Containing(deckPath), GitRepository.RelativePath(deckPath), deckPath);
+        => new(GitRepository.Containing(deckPath), GitRepository.RelativePath(deckPath), Path.GetFullPath(deckPath));
 
     // Runs action on the deck as of the version: the file on disk for the working copy, otherwise a temporary copy
     // from git. Which pages exist depends on the deck, so this is needed even when the previews are already cached.
