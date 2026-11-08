@@ -72,20 +72,20 @@ public class DeckCraftSetupTests
     {
         using var folder = new TestFolder();
         var stamp = folder.Combine("deckcraft-update-check.txt");
-        Assert.True(DeckCraftSetup.UpdateCheckIsDue(stamp, DateTime.UtcNow));
+        Assert.True(DeckCraftUpdate.UpdateCheckIsDue(stamp, DateTime.UtcNow));
 
         File.WriteAllText(stamp, "");
         var checkedAt = File.GetLastWriteTimeUtc(stamp);
 
-        Assert.False(DeckCraftSetup.UpdateCheckIsDue(stamp, checkedAt.AddHours(23)));
-        Assert.True(DeckCraftSetup.UpdateCheckIsDue(stamp, checkedAt.AddDays(1)));
+        Assert.False(DeckCraftUpdate.UpdateCheckIsDue(stamp, checkedAt.AddHours(23)));
+        Assert.True(DeckCraftUpdate.UpdateCheckIsDue(stamp, checkedAt.AddDays(1)));
     }
 
     [Fact]
     public void ReadsTheInstalledVersion()
     {
-        Assert.Equal(new Version(0, 13, 1), DeckCraftSetup.InstalledVersion("deckcraft-cli 0.13.1\n"));
-        Assert.Null(DeckCraftSetup.InstalledVersion("unexpected"));
+        Assert.Equal(new Version(0, 13, 1), DeckCraftUpdate.InstalledVersion("deckcraft-cli 0.13.1\n"));
+        Assert.Null(DeckCraftUpdate.InstalledVersion("unexpected"));
     }
 
     [Fact]
@@ -93,9 +93,9 @@ public class DeckCraftSetupTests
     {
         var prompt = new StringWriter();
 
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, false)));
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "0.15.1", new UserConsole(new StringReader("1\n"), prompt, false)));
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "not-a-version", new UserConsole(new StringReader("1\n"), prompt, false)));
+        Assert.False(DeckCraftUpdate.OfferUpdate(new Version(0, 16, 0), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, false)));
+        Assert.False(DeckCraftUpdate.OfferUpdate(new Version(0, 16, 0), "0.15.1", new UserConsole(new StringReader("1\n"), prompt, false)));
+        Assert.False(DeckCraftUpdate.OfferUpdate(new Version(0, 16, 0), "not-a-version", new UserConsole(new StringReader("1\n"), prompt, false)));
         Assert.Equal("", prompt.ToString());
     }
 
@@ -104,9 +104,9 @@ public class DeckCraftSetupTests
     {
         var prompt = new StringWriter();
 
-        Assert.True(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, false)));
+        Assert.True(DeckCraftUpdate.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, false)));
         Assert.StartsWith("DeckCraft 0.16.0 is available (you have 0.13.1).", prompt.ToString());
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("2\n"), new StringWriter(), false)));
+        Assert.False(DeckCraftUpdate.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("2\n"), new StringWriter(), false)));
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class DeckCraftSetupTests
     {
         var prompt = new StringWriter();
 
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, true)));
+        Assert.False(DeckCraftUpdate.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, true)));
         Assert.Contains("Run CreatePowerpointCheckpoint in a terminal to update it.", prompt.ToString());
         Assert.DoesNotContain("Choice:", prompt.ToString());
     }
@@ -135,13 +135,13 @@ public class DeckCraftSetupTests
     [MemberData(nameof(Assets))]
     public void PicksTheReleaseFile(OSPlatform os, Architecture architecture, string expected)
     {
-        Assert.Equal(expected, DeckCraftSetup.AssetName("1.2.3", os, architecture));
+        Assert.Equal(expected, DeckCraftRelease.AssetName("1.2.3", os, architecture));
     }
 
     [Fact]
     public void UnsupportedArchitectureFails()
     {
-        Assert.Throws<PlatformNotSupportedException>(() => DeckCraftSetup.AssetName("1.2.3", OSPlatform.Linux, Architecture.S390x));
+        Assert.Throws<PlatformNotSupportedException>(() => DeckCraftRelease.AssetName("1.2.3", OSPlatform.Linux, Architecture.S390x));
     }
 
     [Fact]
@@ -153,9 +153,9 @@ public class DeckCraftSetupTests
             ccc *deckcraft-1.2.3-linux-x86_64.tar.gz
             """;
 
-        Assert.Equal("aaa", DeckCraftSetup.ExpectedHash(checksums, "deckcraft-cli-1.2.3-macos-universal.zip"));
-        Assert.Equal("ccc", DeckCraftSetup.ExpectedHash(checksums, "deckcraft-1.2.3-linux-x86_64.tar.gz"));
-        Assert.Null(DeckCraftSetup.ExpectedHash(checksums, "other.zip"));
+        Assert.Equal("aaa", DeckCraftRelease.ExpectedHash(checksums, "deckcraft-cli-1.2.3-macos-universal.zip"));
+        Assert.Equal("ccc", DeckCraftRelease.ExpectedHash(checksums, "deckcraft-1.2.3-linux-x86_64.tar.gz"));
+        Assert.Null(DeckCraftRelease.ExpectedHash(checksums, "other.zip"));
     }
 
     [Fact]

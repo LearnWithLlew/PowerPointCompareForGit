@@ -76,7 +76,7 @@ public static class Program
     private static CommitPreviews PreviewsOf(DeckInRepo deck, Renderer renderer)
     {
         if (renderer == Renderer.DeckCraft
-            && DeckCraftSetup.CheckForUpdate(CommitPreviews.FindDeckCraft(), UserConsole.Standard()))
+            && DeckCraftUpdate.CheckForUpdate(CommitPreviews.FindDeckCraft(), UserConsole.Standard()))
         {
             PreviewPaths.ClearDeckCraft(deck.Repository.Root);
         }
