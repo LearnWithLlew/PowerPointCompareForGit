@@ -78,26 +78,29 @@ internal static class DeckCraftSetup
         }
 
         File.WriteAllText(stampFile, DateTime.UtcNow.ToString("O"));
-        string latest;
-        try
-        {
-            using var client = CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(5);
-            latest = LatestVersion(client);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException)
-        {
-            return false;
-        }
-
-        var installed = InstalledVersion(ProcessRunner.Run(cli, ["--version"], Path.GetTempPath()).OutputText);
-        if (installed is null || !OfferUpdate(installed, latest, console))
+        if (LatestVersionOrNull() is not { } latest
+            || InstalledVersion(ProcessRunner.Run(cli, ["--version"], Path.GetTempPath()).OutputText) is not { } installed
+            || !OfferUpdate(installed, latest, console))
         {
             return false;
         }
 
         Install(console.Prompt);
         return true;
+    }
+
+    private static string? LatestVersionOrNull()
+    {
+        try
+        {
+            using var client = CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+            return LatestVersion(client);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException)
+        {
+            return null;
+        }
     }
 
     private static bool IsInstalledByUs(string cli)
@@ -185,42 +188,58 @@ internal static class DeckCraftSetup
     private static void InstallCli(OSPlatform os, TextWriter progress)
     {
         using var client = CreateClient();
-        var version = LatestVersion(client);
-        var asset = AssetName(version, os, RuntimeInformation.OSArchitecture);
-        var download = $"{Releases}/download/v{version}";
-        var checksums = client.GetStringAsync($"{download}/SHA256SUMS.txt").GetAwaiter().GetResult();
-        var expected = ExpectedHash(checksums, asset) ?? throw new InvalidOperationException($"SHA256SUMS.txt has no entry for {asset}, so it was not installed.");
-
+        var asset = LatestAsset(client, os);
         var work = Directory.CreateTempSubdirectory("deckcraft-install-");
         try
         {
-            progress.WriteLine($"Downloading {asset}...");
-            var archive = Path.Combine(work.FullName, asset);
-            using (var source = client.GetStreamAsync($"{download}/{asset}").GetAwaiter().GetResult())
-            using (var target = File.Create(archive))
-            {
-                source.CopyTo(target);
-            }
-
-            VerifyHash(archive, expected);
-            var unpacked = Path.Combine(work.FullName, "unpacked");
-            Unpack(archive, unpacked);
-            MarkExecutable(unpacked);
-
-            var folder = DeckCraft.InstallFolder();
-            if (Directory.Exists(folder))
-            {
-                Directory.Delete(folder, recursive: true);
-            }
-
-            Directory.CreateDirectory(Path.GetDirectoryName(folder)!);
-            CopyFolder(unpacked, folder);
-            progress.WriteLine($"Installed DeckCraft {version} in {folder}");
+            progress.WriteLine($"Downloading {asset.Name}...");
+            ReplaceInstallFolder(DownloadAndUnpack(client, asset, work.FullName));
+            progress.WriteLine($"Installed DeckCraft {asset.Version} in {DeckCraft.InstallFolder()}");
         }
         finally
         {
             work.Delete(recursive: true);
         }
+    }
+
+    private sealed record ReleaseAsset(string Version, string Name, string Url, string ExpectedHash);
+
+    private static ReleaseAsset LatestAsset(HttpClient client, OSPlatform os)
+    {
+        var version = LatestVersion(client);
+        var name = AssetName(version, os, RuntimeInformation.OSArchitecture);
+        var download = $"{Releases}/download/v{version}";
+        var checksums = client.GetStringAsync($"{download}/SHA256SUMS.txt").GetAwaiter().GetResult();
+        var expected = ExpectedHash(checksums, name) ?? throw new InvalidOperationException($"SHA256SUMS.txt has no entry for {name}, so it was not installed.");
+        return new ReleaseAsset(version, name, $"{download}/{name}", expected);
+    }
+
+    private static string DownloadAndUnpack(HttpClient client, ReleaseAsset asset, string work)
+    {
+        var archive = Path.Combine(work, asset.Name);
+        using (var source = client.GetStreamAsync(asset.Url).GetAwaiter().GetResult())
+        using (var target = File.Create(archive))
+        {
+            source.CopyTo(target);
+        }
+
+        VerifyHash(archive, asset.ExpectedHash);
+        var unpacked = Path.Combine(work, "unpacked");
+        Unpack(archive, unpacked);
+        MarkExecutable(unpacked);
+        return unpacked;
+    }
+
+    private static void ReplaceInstallFolder(string unpacked)
+    {
+        var folder = DeckCraft.InstallFolder();
+        if (Directory.Exists(folder))
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(folder)!);
+        CopyFolder(unpacked, folder);
     }
 
     private static HttpClient CreateClient()
