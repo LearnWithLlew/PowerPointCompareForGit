@@ -44,7 +44,7 @@ public class GitRepositoryTests
     {
         using var folder = RepoWithDeck(out var deckPath);
 
-        Assert.Equal("decks/my.pptx", GitRepository.Containing(deckPath).RelativePath(deckPath));
+        Assert.Equal("decks/my.pptx", GitRepository.RelativePath(deckPath));
     }
 
     [Fact]

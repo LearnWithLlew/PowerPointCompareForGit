@@ -10,26 +10,7 @@ public static class Program
             var request = CommandLineArguments.ToRequest(parseResult);
             try
             {
-                if (request.Reset)
-                {
-                    Reset(Settings.DefaultPath());
-                }
-                else if (request.ClearCache)
-                {
-                    ClearCache(request.File ?? ".");
-                }
-                else if (request.Compare)
-                {
-                    Compare(request);
-                }
-                else
-                {
-                    foreach (var previewPath in RenderRequestedCommits(request))
-                    {
-                        Console.WriteLine(previewPath);
-                    }
-                }
-
+                Run(request);
                 return 0;
             }
             catch (Exception ex)
@@ -40,6 +21,32 @@ public static class Program
         });
 
         return rootCommand.Parse(args).Invoke();
+    }
+
+    private static void Run(Request request)
+    {
+        if (request.Reset)
+        {
+            Reset(Settings.DefaultPath());
+            return;
+        }
+
+        if (request.ClearCache)
+        {
+            ClearCache(request.File ?? ".");
+            return;
+        }
+
+        if (request.Compare)
+        {
+            Compare(request);
+            return;
+        }
+
+        foreach (var previewPath in RenderRequestedCommits(request))
+        {
+            Console.WriteLine(previewPath);
+        }
     }
 
     private static void Reset(string settingsPath)
@@ -80,7 +87,7 @@ public static class Program
     {
         var deckPath = request.File!;
         var repository = GitRepository.Containing(deckPath);
-        var relativePath = repository.RelativePath(deckPath);
+        var relativePath = GitRepository.RelativePath(deckPath);
         CheckForDeckCraftUpdate(repository, request.Renderer);
         var (left, right) = ComparePlan.Choose(repository, relativePath, request.CompareShas);
         if (request.Selective)
@@ -133,7 +140,7 @@ public static class Program
     {
         var deckPath = request.File!;
         var repository = GitRepository.Containing(deckPath);
-        var relativePath = repository.RelativePath(deckPath);
+        var relativePath = GitRepository.RelativePath(deckPath);
         CheckForDeckCraftUpdate(repository, request.Renderer);
 
         IEnumerable<string> RenderCommit(string sha) => request.Pages is { } pages

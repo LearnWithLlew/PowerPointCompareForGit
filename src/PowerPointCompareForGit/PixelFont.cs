@@ -39,16 +39,16 @@ internal static class PixelFont
             }
 
             var glyphLeft = left + c * (GlyphWidth + 1) * Scale;
-            for (var row = 0; row < GlyphHeight; row++)
+            foreach (var (row, column) in LitPixels(glyph))
             {
-                for (var column = 0; column < GlyphWidth; column++)
-                {
-                    if (glyph[row][column] == '#')
-                    {
-                        image.Fill(glyphLeft + column * Scale, top + row * Scale, Scale, Scale, color);
-                    }
-                }
+                image.Fill(glyphLeft + column * Scale, top + row * Scale, Scale, Scale, color);
             }
         }
     }
+
+    private static IEnumerable<(int Row, int Column)> LitPixels(string[] glyph)
+        => from row in Enumerable.Range(0, GlyphHeight)
+           from column in Enumerable.Range(0, GlyphWidth)
+           where glyph[row][column] == '#'
+           select (row, column);
 }

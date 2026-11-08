@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace PowerPointCompareForGit;
 
@@ -68,39 +69,50 @@ internal static class CommandLineArguments
         {
             FileArgument, CommitOption, CompareOption, SelectiveOption, PagesOption, RendererOption, ResetOption, ClearCacheOption
         };
-        rootCommand.Validators.Add(result =>
-        {
-            if (result.GetResult(ResetOption) is not null || result.GetResult(ClearCacheOption) is not null)
-            {
-                return;
-            }
-
-            if (result.GetValue(FileArgument) is null)
-            {
-                result.AddError("A .pptx file is required.");
-            }
-
-            if (result.GetResult(CommitOption) is not null && result.GetResult(CompareOption) is not null)
-            {
-                result.AddError("--commit and --compare can't be used together.");
-            }
-
-            if (result.GetValue(SelectiveOption) && result.GetResult(CompareOption) is null)
-            {
-                result.AddError("--selective requires --compare.");
-            }
-
-            if (result.GetValue(SelectiveOption) && result.GetResult(PagesOption) is not null)
-            {
-                result.AddError("--selective can't be combined with --pages.");
-            }
-
-            if (result.GetValue(PagesOption) is { } pages && PageRange.Parse(pages) is null)
-            {
-                result.AddError("--pages must be a page like 40 or a range like 2-25.");
-            }
-        });
+        rootCommand.Validators.Add(Validate);
         return rootCommand;
+    }
+
+    private static void Validate(CommandResult result)
+    {
+        if (result.GetResult(ResetOption) is not null || result.GetResult(ClearCacheOption) is not null)
+        {
+            return;
+        }
+
+        if (result.GetValue(FileArgument) is null)
+        {
+            result.AddError("A .pptx file is required.");
+        }
+
+        if (result.GetResult(CommitOption) is not null && result.GetResult(CompareOption) is not null)
+        {
+            result.AddError("--commit and --compare can't be used together.");
+        }
+
+        ValidateSelective(result);
+        if (result.GetValue(PagesOption) is { } pages && PageRange.Parse(pages) is null)
+        {
+            result.AddError("--pages must be a page like 40 or a range like 2-25.");
+        }
+    }
+
+    private static void ValidateSelective(CommandResult result)
+    {
+        if (!result.GetValue(SelectiveOption))
+        {
+            return;
+        }
+
+        if (result.GetResult(CompareOption) is null)
+        {
+            result.AddError("--selective requires --compare.");
+        }
+
+        if (result.GetResult(PagesOption) is not null)
+        {
+            result.AddError("--selective can't be combined with --pages.");
+        }
     }
 
     internal static Request ToRequest(ParseResult parseResult)

@@ -115,30 +115,32 @@ internal static class DeckCraftSetup
 
         if (os == OSPlatform.Windows)
         {
-            var name = architecture switch
-            {
-                Architecture.X64 => "x64",
-                Architecture.Arm64 => "arm64",
-                Architecture.X86 => "x86",
-                _ => throw new PlatformNotSupportedException($"DeckCraft has no Windows build for {architecture}. See {Releases}.")
-            };
-            return $"deckcraft-{version}-windows-{name}-portable.zip";
+            return $"deckcraft-{version}-windows-{WindowsArchitectureName(architecture)}-portable.zip";
         }
 
         if (os == OSPlatform.Linux)
         {
-            var name = architecture switch
-            {
-                Architecture.X64 => "x86_64",
-                Architecture.Arm64 => "aarch64",
-                Architecture.RiscV64 => "riscv64",
-                _ => throw new PlatformNotSupportedException($"DeckCraft has no Linux build for {architecture}. See {Releases}.")
-            };
-            return $"deckcraft-{version}-linux-{name}.tar.gz";
+            return $"deckcraft-{version}-linux-{LinuxArchitectureName(architecture)}.tar.gz";
         }
 
         throw new PlatformNotSupportedException($"Install DeckCraft from {Releases}.");
     }
+
+    private static string WindowsArchitectureName(Architecture architecture) => architecture switch
+    {
+        Architecture.X64 => "x64",
+        Architecture.Arm64 => "arm64",
+        Architecture.X86 => "x86",
+        _ => throw new PlatformNotSupportedException($"DeckCraft has no Windows build for {architecture}. See {Releases}.")
+    };
+
+    private static string LinuxArchitectureName(Architecture architecture) => architecture switch
+    {
+        Architecture.X64 => "x86_64",
+        Architecture.Arm64 => "aarch64",
+        Architecture.RiscV64 => "riscv64",
+        _ => throw new PlatformNotSupportedException($"DeckCraft has no Linux build for {architecture}. See {Releases}.")
+    };
 
     // SHA256SUMS.txt has one "<hash>  <file name>" per line.
     internal static string? ExpectedHash(string checksums, string assetName)

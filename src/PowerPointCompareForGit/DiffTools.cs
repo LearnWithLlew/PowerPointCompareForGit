@@ -58,6 +58,16 @@ internal static class DiffTools
         var current = new StringBuilder();
         var inQuotes = false;
         var hasPart = false;
+        void EndPart()
+        {
+            if (hasPart)
+            {
+                parts.Add(current.ToString());
+                current.Clear();
+                hasPart = false;
+            }
+        }
+
         foreach (var c in command)
         {
             if (c == '"')
@@ -67,12 +77,7 @@ internal static class DiffTools
             }
             else if (char.IsWhiteSpace(c) && !inQuotes)
             {
-                if (hasPart)
-                {
-                    parts.Add(current.ToString());
-                    current.Clear();
-                    hasPart = false;
-                }
+                EndPart();
             }
             else
             {
@@ -81,11 +86,7 @@ internal static class DiffTools
             }
         }
 
-        if (hasPart)
-        {
-            parts.Add(current.ToString());
-        }
-
+        EndPart();
         return parts;
     }
 

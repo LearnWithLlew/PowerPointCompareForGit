@@ -27,7 +27,7 @@ internal sealed class GitRepository
 
     // The path relative to the repo root, with forward slashes, as git expects.
     // Asks git for the prefix instead of comparing paths, so symlinked folders (e.g. /tmp on Mac) still work.
-    internal string RelativePath(string path)
+    internal static string RelativePath(string path)
     {
         var prefix = ProcessRunner.Run("git", ["rev-parse", "--show-prefix"], DirectoryOf(path)).OutputText;
         return prefix + Path.GetFileName(path);

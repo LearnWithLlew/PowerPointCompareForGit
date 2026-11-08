@@ -21,6 +21,14 @@ internal static class DiffToolSetup
                 $"or set \"diffTool\": \"{CustomExample}\" in {settingsPath}.");
         }
 
+        var command = AskForCommand(detected, input, prompt);
+        (settings with { DiffTool = command }).Save(settingsPath);
+        prompt.WriteLine($"Saved to {settingsPath}");
+        return command;
+    }
+
+    private static string AskForCommand(IReadOnlyList<DiffTool> detected, TextReader input, TextWriter prompt)
+    {
         prompt.WriteLine("Which diff tool should open the PNGs?");
         for (var i = 0; i < detected.Count; i++)
         {
@@ -32,27 +40,28 @@ internal static class DiffToolSetup
         prompt.Write("Choice: ");
         var answer = input.ReadLine()?.Trim();
 
-        string command;
         if (int.TryParse(answer, out var choice) && choice >= 1 && choice <= detected.Count)
         {
-            command = detected[choice - 1].Command;
-        }
-        else if (answer == customChoice.ToString())
-        {
-            prompt.Write("Command (use {file1} and {file2}): ");
-            command = input.ReadLine()?.Trim() ?? "";
-            if (!command.Contains("{file1}") || !command.Contains("{file2}"))
-            {
-                throw new InvalidOperationException("The command must contain {file1} and {file2}.");
-            }
-        }
-        else
-        {
-            throw new InvalidOperationException($"'{answer}' is not one of the choices.");
+            return detected[choice - 1].Command;
         }
 
-        (settings with { DiffTool = command }).Save(settingsPath);
-        prompt.WriteLine($"Saved to {settingsPath}");
+        if (answer == customChoice.ToString())
+        {
+            return AskForCustomCommand(input, prompt);
+        }
+
+        throw new InvalidOperationException($"'{answer}' is not one of the choices.");
+    }
+
+    private static string AskForCustomCommand(TextReader input, TextWriter prompt)
+    {
+        prompt.Write("Command (use {file1} and {file2}): ");
+        var command = input.ReadLine()?.Trim() ?? "";
+        if (!command.Contains("{file1}") || !command.Contains("{file2}"))
+        {
+            throw new InvalidOperationException("The command must contain {file1} and {file2}.");
+        }
+
         return command;
     }
 }
