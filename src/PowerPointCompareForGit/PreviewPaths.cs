@@ -1,27 +1,23 @@
 ﻿namespace PowerPointCompareForGit;
 
-internal static class PreviewPaths
+// deckPath may be absolute or relative to repoRoot.
+internal sealed class PreviewPaths(string repoRoot, string deckPath, Renderer renderer = Renderer.LibreOffice)
 {
     internal const string WorkingCopy = "working";
     private const int ShortShaLength = 7;
 
     // <repoRoot>/.git/pptx-previews/<deck folder relative to repoRoot>/<deck file name>.<short sha or "working">.png
     // DeckCraft adds .deckcraft after the version, so the two renderers' previews never overwrite each other.
-    // deckPath may be absolute or relative to repoRoot.
-    internal static string For(string repoRoot, string deckPath, string version, Renderer renderer = Renderer.LibreOffice)
-        => Build(repoRoot, deckPath, version, renderer, "");
+    internal string For(string version) => Build(version, "");
 
     // Same folder, with .page.<n> before the .png.
-    internal static string ForPage(string repoRoot, string deckPath, string version, int page, Renderer renderer = Renderer.LibreOffice)
-        => Build(repoRoot, deckPath, version, renderer, $".page.{page}");
+    internal string ForPage(string version, int page) => Build(version, $".page.{page}");
 
     // Same folder, with .pages.<first>-<last> before the .png.
-    internal static string ForPages(string repoRoot, string deckPath, string version, PageRange pages, Renderer renderer = Renderer.LibreOffice)
-        => Build(repoRoot, deckPath, version, renderer, $".pages.{pages.First}-{pages.Last}");
+    internal string ForPages(string version, PageRange pages) => Build(version, $".pages.{pages.First}-{pages.Last}");
 
     // Same folder, with .selective-vs.<other version> before the .png, because what's drawn depends on both versions.
-    internal static string ForSelective(string repoRoot, string deckPath, string version, string otherVersion, Renderer renderer = Renderer.LibreOffice)
-        => Build(repoRoot, deckPath, version, renderer, $".selective-vs.{Label(otherVersion)}");
+    internal string ForSelective(string version, string otherVersion) => Build(version, $".selective-vs.{Label(otherVersion)}");
 
     // Every preview of every deck in the repo is somewhere under here.
     internal static string CacheFolder(string repoRoot) => Path.Combine(Path.GetFullPath(repoRoot), ".git", "pptx-previews");
@@ -57,7 +53,7 @@ internal static class PreviewPaths
     private static string Label(string version)
         => version == WorkingCopy ? WorkingCopy : version[..Math.Min(ShortShaLength, version.Length)];
 
-    private static string Build(string repoRoot, string deckPath, string version, Renderer renderer, string suffix)
+    private string Build(string version, string suffix)
     {
         var root = Path.GetFullPath(repoRoot);
         var deck = Path.GetFullPath(deckPath, root);

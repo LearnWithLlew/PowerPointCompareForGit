@@ -3,6 +3,7 @@
 public class PreviewPathsTests
 {
     private static readonly string RepoRoot = Path.Combine(Path.GetTempPath(), "repo");
+    private static readonly PreviewPaths MyDeck = new(RepoRoot, "decks/my.pptx");
 
     private static string Expected(params string[] parts)
         => Path.Combine([RepoRoot, ".git", "pptx-previews", .. parts]);
@@ -10,7 +11,7 @@ public class PreviewPathsTests
     [Fact]
     public void ShortensShaToSevenCharacters()
     {
-        var path = PreviewPaths.For(RepoRoot, "decks/my.pptx", "0123456789abcdef");
+        var path = MyDeck.For("0123456789abcdef");
 
         Assert.Equal(Expected("decks", "my.pptx.0123456.png"), path);
     }
@@ -18,7 +19,7 @@ public class PreviewPathsTests
     [Fact]
     public void SelectiveNamesBothVersions()
     {
-        var path = PreviewPaths.ForSelective(RepoRoot, "decks/my.pptx", "0123456789abcdef", "fedcba9876543210");
+        var path = MyDeck.ForSelective("0123456789abcdef", "fedcba9876543210");
 
         Assert.Equal(Expected("decks", "my.pptx.0123456.selective-vs.fedcba9.png"), path);
     }
@@ -26,7 +27,7 @@ public class PreviewPathsTests
     [Fact]
     public void SelectiveNamesTheWorkingCopyAndRenderer()
     {
-        var path = PreviewPaths.ForSelective(RepoRoot, "decks/my.pptx", PreviewPaths.WorkingCopy, "fedcba9876543210", Renderer.DeckCraft);
+        var path = new PreviewPaths(RepoRoot, "decks/my.pptx", Renderer.DeckCraft).ForSelective(PreviewPaths.WorkingCopy, "fedcba9876543210");
 
         Assert.Equal(Expected("decks", "my.pptx.working.deckcraft.selective-vs.fedcba9.png"), path);
     }
@@ -34,7 +35,7 @@ public class PreviewPathsTests
     [Fact]
     public void WorkingCopyUsesWorkingLabel()
     {
-        var path = PreviewPaths.For(RepoRoot, "decks/my.pptx", PreviewPaths.WorkingCopy);
+        var path = MyDeck.For(PreviewPaths.WorkingCopy);
 
         Assert.Equal(Expected("decks", "my.pptx.working.png"), path);
     }
@@ -42,7 +43,7 @@ public class PreviewPathsTests
     [Fact]
     public void PageFileSitsNextToTheOtherPreviews()
     {
-        var path = PreviewPaths.ForPage(RepoRoot, "decks/my.pptx", "0123456789abcdef", 1);
+        var path = MyDeck.ForPage("0123456789abcdef", 1);
 
         Assert.Equal(Expected("decks", "my.pptx.0123456.page.1.png"), path);
     }
@@ -50,7 +51,7 @@ public class PreviewPathsTests
     [Fact]
     public void StitchedRangeFileNamesTheRange()
     {
-        var path = PreviewPaths.ForPages(RepoRoot, "decks/my.pptx", PreviewPaths.WorkingCopy, new PageRange(2, 25));
+        var path = MyDeck.ForPages(PreviewPaths.WorkingCopy, new PageRange(2, 25));
 
         Assert.Equal(Expected("decks", "my.pptx.working.pages.2-25.png"), path);
     }
@@ -58,15 +59,15 @@ public class PreviewPathsTests
     [Fact]
     public void OtherRenderersGetTheirOwnFiles()
     {
-        Assert.Equal(Expected("decks", "my.pptx.0123456.deckcraft.png"), PreviewPaths.For(RepoRoot, "decks/my.pptx", "0123456789abcdef", Renderer.DeckCraft));
-        Assert.Equal(Expected("decks", "my.pptx.working.deckcraft.page.1.png"), PreviewPaths.ForPage(RepoRoot, "decks/my.pptx", PreviewPaths.WorkingCopy, 1, Renderer.DeckCraft));
-        Assert.Equal(Expected("decks", "my.pptx.0123456.deckcraft.pages.2-25.png"), PreviewPaths.ForPages(RepoRoot, "decks/my.pptx", "0123456789abcdef", new PageRange(2, 25), Renderer.DeckCraft));
+        Assert.Equal(Expected("decks", "my.pptx.0123456.deckcraft.png"), new PreviewPaths(RepoRoot, "decks/my.pptx", Renderer.DeckCraft).For("0123456789abcdef"));
+        Assert.Equal(Expected("decks", "my.pptx.working.deckcraft.page.1.png"), new PreviewPaths(RepoRoot, "decks/my.pptx", Renderer.DeckCraft).ForPage(PreviewPaths.WorkingCopy, 1));
+        Assert.Equal(Expected("decks", "my.pptx.0123456.deckcraft.pages.2-25.png"), new PreviewPaths(RepoRoot, "decks/my.pptx", Renderer.DeckCraft).ForPages("0123456789abcdef", new PageRange(2, 25)));
     }
 
     [Fact]
     public void DeckAtRepoRootHasNoSubfolder()
     {
-        var path = PreviewPaths.For(RepoRoot, "my.pptx", "0123456789abcdef");
+        var path = new PreviewPaths(RepoRoot, "my.pptx").For("0123456789abcdef");
 
         Assert.Equal(Expected("my.pptx.0123456.png"), path);
     }
@@ -74,7 +75,7 @@ public class PreviewPathsTests
     [Fact]
     public void AcceptsAbsoluteDeckPath()
     {
-        var path = PreviewPaths.For(RepoRoot, Path.Combine(RepoRoot, "decks", "my.pptx"), "0123456789abcdef");
+        var path = new PreviewPaths(RepoRoot, Path.Combine(RepoRoot, "decks", "my.pptx")).For("0123456789abcdef");
 
         Assert.Equal(Expected("decks", "my.pptx.0123456.png"), path);
     }
@@ -82,7 +83,7 @@ public class PreviewPathsTests
     [Fact]
     public void RejectsDeckOutsideRepo()
     {
-        Assert.Throws<ArgumentException>(() => PreviewPaths.For(RepoRoot, "../other/my.pptx", "0123456789abcdef"));
+        Assert.Throws<ArgumentException>(() => new PreviewPaths(RepoRoot, "../other/my.pptx").For("0123456789abcdef"));
     }
 
     // Known gaps: these pass today and document wrong behavior. Flip them when fixed (see TODO in Project.md).
@@ -91,14 +92,14 @@ public class PreviewPathsTests
     public void KnownGap_FolderStartingWithDotDotIsRejected()
     {
         // "..decks" is a normal folder inside the repo, but the check only looks for a leading "..".
-        Assert.Throws<ArgumentException>(() => PreviewPaths.For(RepoRoot, "..decks/my.pptx", "0123456789abcdef"));
+        Assert.Throws<ArgumentException>(() => new PreviewPaths(RepoRoot, "..decks/my.pptx").For("0123456789abcdef"));
     }
 
     [Fact]
     public void KnownGap_WorktreeGitFileIsTreatedAsFolder()
     {
         // In a git worktree or submodule, .git is a file pointing at the real git dir, so .git/pptx-previews can't be created.
-        var path = PreviewPaths.For(RepoRoot, "my.pptx", "0123456789abcdef");
+        var path = new PreviewPaths(RepoRoot, "my.pptx").For("0123456789abcdef");
 
         Assert.StartsWith(Path.Combine(RepoRoot, ".git", "pptx-previews"), path);
     }
@@ -107,7 +108,7 @@ public class PreviewPathsTests
     public void ClearDeletesTheWholeCache()
     {
         using var folder = new TestFolder();
-        var preview = PreviewPaths.For(folder.Path, "decks/my.pptx", "0123456789abcdef");
+        var preview = new PreviewPaths(folder.Path, "decks/my.pptx").For("0123456789abcdef");
         Directory.CreateDirectory(Path.GetDirectoryName(preview)!);
         File.WriteAllText(preview, "");
 
@@ -122,10 +123,10 @@ public class PreviewPathsTests
         using var folder = new TestFolder();
         string[] deckCraft =
         [
-            PreviewPaths.For(folder.Path, "decks/my.pptx", "0123456789abcdef", Renderer.DeckCraft),
-            PreviewPaths.ForPage(folder.Path, "decks/my.pptx", PreviewPaths.WorkingCopy, 2, Renderer.DeckCraft)
+            new PreviewPaths(folder.Path, "decks/my.pptx", Renderer.DeckCraft).For("0123456789abcdef"),
+            new PreviewPaths(folder.Path, "decks/my.pptx", Renderer.DeckCraft).ForPage(PreviewPaths.WorkingCopy, 2)
         ];
-        var libreOffice = PreviewPaths.For(folder.Path, "decks/my.pptx", "0123456789abcdef");
+        var libreOffice = new PreviewPaths(folder.Path, "decks/my.pptx").For("0123456789abcdef");
         foreach (var preview in deckCraft.Append(libreOffice))
         {
             Directory.CreateDirectory(Path.GetDirectoryName(preview)!);

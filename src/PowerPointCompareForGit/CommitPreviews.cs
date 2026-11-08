@@ -3,28 +3,30 @@
 // Images is null when no slide changed.
 internal sealed record SelectivePreviews(SlideAlignment Alignment, (string Left, string Right)? Images);
 
-internal static class CommitPreviews
+internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Renderer.LibreOffice)
 {
+    private readonly PreviewPaths paths = new(deck.Repository.Root, deck.RelativePath, renderer);
+
     // Returns the preview PNG for the deck as of the commit, rendering it only if it isn't cached yet.
-    internal static string Render(GitRepository repository, string relativePath, string sha, Renderer renderer = Renderer.LibreOffice)
+    internal string RenderCommit(string sha)
     {
-        var previewPath = PreviewPaths.For(repository.Root, relativePath, sha, renderer);
+        var previewPath = paths.For(sha);
         if (File.Exists(previewPath))
         {
             return previewPath;
         }
 
-        if (!repository.FileExistsAt(sha, relativePath))
+        if (!deck.Repository.FileExistsAt(sha, deck.RelativePath))
         {
-            throw new InvalidOperationException($"{relativePath} does not exist in commit {sha[..7]}.");
+            throw new InvalidOperationException($"{deck.RelativePath} does not exist in commit {sha[..7]}.");
         }
 
-        var slideRenderer = FindRenderer(renderer);
+        var slideRenderer = FindRenderer();
         var work = Directory.CreateTempSubdirectory("pptx-extract-");
         try
         {
-            var deckCopy = Path.Combine(work.FullName, Path.GetFileName(relativePath));
-            repository.ExtractFile(sha, relativePath, deckCopy);
+            var deckCopy = Path.Combine(work.FullName, Path.GetFileName(deck.RelativePath));
+            deck.Repository.ExtractFile(sha, deck.RelativePath, deckCopy);
             DeckRenderer.Render(slideRenderer, deckCopy, previewPath);
         }
         finally
@@ -36,42 +38,40 @@ internal static class CommitPreviews
     }
 
     // Renders the deck as it is on disk. Never cached: it is re-rendered on every run.
-    internal static string RenderWorkingCopy(GitRepository repository, string relativePath, string deckPath, Renderer renderer = Renderer.LibreOffice)
+    internal string RenderWorkingCopy()
     {
-        if (!File.Exists(deckPath))
+        if (!File.Exists(deck.WorkingCopyPath))
         {
-            throw new FileNotFoundException($"{deckPath} does not exist.");
+            throw new FileNotFoundException($"{deck.WorkingCopyPath} does not exist.");
         }
 
-        var previewPath = PreviewPaths.For(repository.Root, relativePath, PreviewPaths.WorkingCopy, renderer);
-        DeckRenderer.Render(FindRenderer(renderer), deckPath, previewPath);
+        var previewPath = paths.For(PreviewPaths.WorkingCopy);
+        DeckRenderer.Render(FindRenderer(), deck.WorkingCopyPath, previewPath);
         return previewPath;
     }
 
     // version is a commit sha or PreviewPaths.WorkingCopy.
-    internal static string Render(GitRepository repository, string relativePath, string deckPath, string version, Renderer renderer = Renderer.LibreOffice)
-        => version == PreviewPaths.WorkingCopy
-            ? RenderWorkingCopy(repository, relativePath, deckPath, renderer)
-            : Render(repository, relativePath, version, renderer);
+    internal string Render(string version)
+        => version == PreviewPaths.WorkingCopy ? RenderWorkingCopy() : RenderCommit(version);
 
     // One PNG per page, rendering only the pages that aren't cached yet. version is a commit sha or PreviewPaths.WorkingCopy.
-    internal static IReadOnlyList<string> RenderPages(GitRepository repository, string relativePath, string deckPath, string version, PageRange pages, Renderer renderer = Renderer.LibreOffice)
-        => WithDeck(repository, relativePath, deckPath, version, deck => RenderPagesOf(repository, relativePath, deck, version, Clamp(pages, deck), renderer));
+    internal IReadOnlyList<string> RenderPages(string version, PageRange pages)
+        => deck.AsOf(version, deckFile => RenderPagesOf(deckFile, version, Clamp(pages, deckFile)));
 
     // One PNG for the diff tool: the page itself if only one is left after clamping, otherwise the pages stitched together.
-    internal static string RenderForCompare(GitRepository repository, string relativePath, string deckPath, string version, PageRange pages, Renderer renderer = Renderer.LibreOffice)
-        => WithDeck(repository, relativePath, deckPath, version, deck =>
+    internal string RenderForCompare(string version, PageRange pages)
+        => deck.AsOf(version, deckFile =>
         {
-            var clamped = Clamp(pages, deck);
+            var clamped = Clamp(pages, deckFile);
             if (clamped.IsSinglePage)
             {
-                return RenderPagesOf(repository, relativePath, deck, version, clamped, renderer)[0];
+                return RenderPagesOf(deckFile, version, clamped)[0];
             }
 
-            var previewPath = PreviewPaths.ForPages(repository.Root, relativePath, version, clamped, renderer);
+            var previewPath = paths.ForPages(version, clamped);
             if (version == PreviewPaths.WorkingCopy || !File.Exists(previewPath))
             {
-                DeckRenderer.RenderRange(FindRenderer(renderer), deck, clamped, previewPath);
+                DeckRenderer.RenderRange(FindRenderer(), deckFile, clamped, previewPath);
             }
 
             return previewPath;
@@ -79,8 +79,8 @@ internal static class CommitPreviews
 
     // Compares the versions and draws only the slides that changed, reusing the images if both are cached.
     // The decks are always read, because the moves come from them. There are no images when nothing changed.
-    internal static SelectivePreviews RenderSelective(GitRepository repository, string relativePath, string deckPath, string left, string right, Renderer renderer = Renderer.LibreOffice)
-        => WithDeck(repository, relativePath, deckPath, left, leftDeck => WithDeck(repository, relativePath, deckPath, right, rightDeck =>
+    internal SelectivePreviews RenderSelective(string left, string right)
+        => deck.AsOf(left, leftDeck => deck.AsOf(right, rightDeck =>
         {
             var alignment = SlideAlignment.Of(SlideFingerprints.Of(leftDeck), SlideFingerprints.Of(rightDeck));
             if (alignment.Rows.Count == 0)
@@ -88,65 +88,38 @@ internal static class CommitPreviews
                 return new SelectivePreviews(alignment, null);
             }
 
-            var leftPreview = PreviewPaths.ForSelective(repository.Root, relativePath, left, right, renderer);
-            var rightPreview = PreviewPaths.ForSelective(repository.Root, relativePath, right, left, renderer);
+            var leftPreview = paths.ForSelective(left, right);
+            var rightPreview = paths.ForSelective(right, left);
             if (left == PreviewPaths.WorkingCopy || right == PreviewPaths.WorkingCopy || !File.Exists(leftPreview) || !File.Exists(rightPreview))
             {
-                DeckRenderer.RenderAligned(FindRenderer(renderer), leftDeck, rightDeck, alignment.Rows, leftPreview, rightPreview);
+                DeckRenderer.RenderAligned(FindRenderer(), leftDeck, rightDeck, alignment.Rows, leftPreview, rightPreview);
             }
 
             return new SelectivePreviews(alignment, (leftPreview, rightPreview));
         }));
 
-    private static IReadOnlyList<string> RenderPagesOf(GitRepository repository, string relativePath, string deck, string version, PageRange pages, Renderer renderer)
+    private IReadOnlyList<string> RenderPagesOf(string deckFile, string version, PageRange pages)
     {
-        string PathFor(int page) => PreviewPaths.ForPage(repository.Root, relativePath, version, page, renderer);
+        string PathFor(int page) => paths.ForPage(version, page);
 
         var missing = pages.Pages.Where(page => version == PreviewPaths.WorkingCopy || !File.Exists(PathFor(page))).ToList();
         if (missing.Count > 0)
         {
-            DeckRenderer.RenderPages(FindRenderer(renderer), deck, missing, PathFor);
+            DeckRenderer.RenderPages(FindRenderer(), deckFile, missing, PathFor);
         }
 
         return pages.Pages.Select(PathFor).ToList();
     }
 
-    private static PageRange Clamp(PageRange pages, string deck)
+    private static PageRange Clamp(PageRange pages, string deckFile)
     {
-        var slideCount = SlideSplitter.CountSlides(deck);
+        var slideCount = SlideSplitter.CountSlides(deckFile);
         return slideCount == 0
-            ? throw new InvalidOperationException($"{deck} has no slides.")
+            ? throw new InvalidOperationException($"{deckFile} has no slides.")
             : pages.ClampTo(slideCount);
     }
 
-    // Runs action on the deck as of the version: the file on disk for the working copy, otherwise a temporary copy
-    // from git. Which pages exist depends on the deck, so this is needed even when the previews are already cached.
-    private static T WithDeck<T>(GitRepository repository, string relativePath, string deckPath, string version, Func<string, T> action)
-    {
-        if (version == PreviewPaths.WorkingCopy)
-        {
-            return File.Exists(deckPath) ? action(deckPath) : throw new FileNotFoundException($"{deckPath} does not exist.");
-        }
-
-        if (!repository.FileExistsAt(version, relativePath))
-        {
-            throw new InvalidOperationException($"{relativePath} does not exist in commit {version[..7]}.");
-        }
-
-        var work = Directory.CreateTempSubdirectory("pptx-extract-");
-        try
-        {
-            var deckCopy = Path.Combine(work.FullName, Path.GetFileName(relativePath));
-            repository.ExtractFile(version, relativePath, deckCopy);
-            return action(deckCopy);
-        }
-        finally
-        {
-            work.Delete(recursive: true);
-        }
-    }
-
-    private static ISlideRenderer FindRenderer(Renderer renderer)
+    private ISlideRenderer FindRenderer()
         => renderer == Renderer.DeckCraft
             ? new DeckCraftRenderer(FindDeckCraft())
             : new LibreOfficeRenderer(FindLibreOffice());

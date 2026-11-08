@@ -13,15 +13,15 @@ public class CommitPreviewsTests
     public void RendersEachCommitSeparately()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var threeSlides = repository.ResolveCommit("HEAD");
+        var deck = DeckInRepo.At(deckPath);
+        var threeSlides = deck.Repository.ResolveCommit("HEAD");
         SlideSplitter.Split(TestFolder.ThreeSlideDeck, folder.Path);
         File.Copy(folder.Combine("slide0001.pptx"), deckPath, overwrite: true);
         GitRepositoryTests.Git(folder.Path, "commit", "-q", "-am", "one slide");
-        var oneSlide = repository.ResolveCommit("HEAD");
+        var oneSlide = deck.Repository.ResolveCommit("HEAD");
 
-        var threeSlidePreview = CommitPreviews.Render(repository, "decks/my.pptx", threeSlides);
-        var oneSlidePreview = CommitPreviews.Render(repository, "decks/my.pptx", oneSlide);
+        var threeSlidePreview = new CommitPreviews(deck).RenderCommit(threeSlides);
+        var oneSlidePreview = new CommitPreviews(deck).RenderCommit(oneSlide);
 
         Assert.Equal(3 * (SlideStitcher.BandHeight + SlideHeight), RgbaImage.LoadPng(threeSlidePreview).Height);
         Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(oneSlidePreview).Height);
@@ -31,16 +31,16 @@ public class CommitPreviewsTests
     public void SelectiveDrawsOnlyTheChangedSlideOfEachVersion()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var sha = repository.ResolveCommit("HEAD");
+        var deck = DeckInRepo.At(deckPath);
+        var sha = deck.Repository.ResolveCommit("HEAD");
         EditSecondSlide(deckPath);
 
-        var previews = CommitPreviews.RenderSelective(repository, "decks/my.pptx", deckPath, sha, PreviewPaths.WorkingCopy);
+        var previews = new CommitPreviews(deck).RenderSelective(sha, PreviewPaths.WorkingCopy);
 
         Assert.Equal([new SlideRow(2, 2)], previews.Alignment.Rows);
         var (left, right) = previews.Images!.Value;
-        Assert.Equal(PreviewPaths.ForSelective(repository.Root, "decks/my.pptx", sha, PreviewPaths.WorkingCopy), left);
-        Assert.Equal(PreviewPaths.ForSelective(repository.Root, "decks/my.pptx", PreviewPaths.WorkingCopy, sha), right);
+        Assert.Equal(PathsOf(deck).ForSelective(sha, PreviewPaths.WorkingCopy), left);
+        Assert.Equal(PathsOf(deck).ForSelective(PreviewPaths.WorkingCopy, sha), right);
         Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(left).Height);
         Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(right).Height);
     }
@@ -49,10 +49,10 @@ public class CommitPreviewsTests
     public void SelectiveWithNoChangesHasNoImages()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var sha = repository.ResolveCommit("HEAD");
+        var deck = DeckInRepo.At(deckPath);
+        var sha = deck.Repository.ResolveCommit("HEAD");
 
-        var previews = CommitPreviews.RenderSelective(repository, "decks/my.pptx", deckPath, sha, PreviewPaths.WorkingCopy);
+        var previews = new CommitPreviews(deck).RenderSelective(sha, PreviewPaths.WorkingCopy);
 
         Assert.Empty(previews.Alignment.Rows);
         Assert.Null(previews.Images);
@@ -62,22 +62,24 @@ public class CommitPreviewsTests
     public void SelectiveReusesCachedPreviewsBetweenCommits()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var before = repository.ResolveCommit("HEAD");
+        var deck = DeckInRepo.At(deckPath);
+        var before = deck.Repository.ResolveCommit("HEAD");
         EditSecondSlide(deckPath);
         GitRepositoryTests.Git(folder.Path, "commit", "-q", "-am", "edit");
-        var after = repository.ResolveCommit("HEAD");
-        var cachedLeft = PreviewPaths.ForSelective(repository.Root, "decks/my.pptx", before, after);
-        var cachedRight = PreviewPaths.ForSelective(repository.Root, "decks/my.pptx", after, before);
+        var after = deck.Repository.ResolveCommit("HEAD");
+        var cachedLeft = PathsOf(deck).ForSelective(before, after);
+        var cachedRight = PathsOf(deck).ForSelective(after, before);
         Directory.CreateDirectory(Path.GetDirectoryName(cachedLeft)!);
         File.WriteAllText(cachedLeft, "already rendered");
         File.WriteAllText(cachedRight, "already rendered");
 
-        CommitPreviews.RenderSelective(repository, "decks/my.pptx", deckPath, before, after);
+        new CommitPreviews(deck).RenderSelective(before, after);
 
         Assert.Equal("already rendered", File.ReadAllText(cachedLeft));
         Assert.Equal("already rendered", File.ReadAllText(cachedRight));
     }
+
+    private static PreviewPaths PathsOf(DeckInRepo deck) => new(deck.Repository.Root, deck.RelativePath);
 
     private static void EditSecondSlide(string deckPath)
     {
@@ -93,13 +95,13 @@ public class CommitPreviewsTests
     public void ReusesCachedPreview()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var sha = repository.ResolveCommit("HEAD");
-        var cached = PreviewPaths.For(repository.Root, "decks/my.pptx", sha);
+        var deck = DeckInRepo.At(deckPath);
+        var sha = deck.Repository.ResolveCommit("HEAD");
+        var cached = PathsOf(deck).For(sha);
         Directory.CreateDirectory(Path.GetDirectoryName(cached)!);
         File.WriteAllText(cached, "already rendered");
 
-        Assert.Equal(cached, CommitPreviews.Render(repository, "decks/my.pptx", sha));
+        Assert.Equal(cached, new CommitPreviews(deck).RenderCommit(sha));
         Assert.Equal("already rendered", File.ReadAllText(cached));
     }
 
@@ -107,13 +109,13 @@ public class CommitPreviewsTests
     public void RangeRendersOnePngPerPageClampedToTheDeck()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var sha = repository.ResolveCommit("HEAD");
+        var deck = DeckInRepo.At(deckPath);
+        var sha = deck.Repository.ResolveCommit("HEAD");
 
-        var previews = CommitPreviews.RenderPages(repository, "decks/my.pptx", deckPath, sha, new PageRange(2, 25));
+        var previews = new CommitPreviews(deck).RenderPages(sha, new PageRange(2, 25));
 
         Assert.Equal(
-            [PreviewPaths.ForPage(repository.Root, "decks/my.pptx", sha, 2), PreviewPaths.ForPage(repository.Root, "decks/my.pptx", sha, 3)],
+            [PathsOf(deck).ForPage(sha, 2), PathsOf(deck).ForPage(sha, 3)],
             previews);
         Assert.All(previews, preview => Assert.Equal(SlideHeight, RgbaImage.LoadPng(preview).Height));
     }
@@ -122,25 +124,25 @@ public class CommitPreviewsTests
     public void PagePastTheEndRendersTheLastSlide()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var sha = repository.ResolveCommit("HEAD");
+        var deck = DeckInRepo.At(deckPath);
+        var sha = deck.Repository.ResolveCommit("HEAD");
 
-        var preview = Assert.Single(CommitPreviews.RenderPages(repository, "decks/my.pptx", deckPath, sha, new PageRange(40, 40)));
+        var preview = Assert.Single(new CommitPreviews(deck).RenderPages(sha, new PageRange(40, 40)));
 
-        Assert.Equal(PreviewPaths.ForPage(repository.Root, "decks/my.pptx", sha, 3), preview);
+        Assert.Equal(PathsOf(deck).ForPage(sha, 3), preview);
     }
 
     [Fact]
     public void ReusesCachedPage()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var sha = repository.ResolveCommit("HEAD");
-        var cached = PreviewPaths.ForPage(repository.Root, "decks/my.pptx", sha, 2);
+        var deck = DeckInRepo.At(deckPath);
+        var sha = deck.Repository.ResolveCommit("HEAD");
+        var cached = PathsOf(deck).ForPage(sha, 2);
         Directory.CreateDirectory(Path.GetDirectoryName(cached)!);
         File.WriteAllText(cached, "already rendered");
 
-        var preview = Assert.Single(CommitPreviews.RenderPages(repository, "decks/my.pptx", deckPath, sha, new PageRange(2, 2)));
+        var preview = Assert.Single(new CommitPreviews(deck).RenderPages(sha, new PageRange(2, 2)));
 
         Assert.Equal(cached, preview);
         Assert.Equal("already rendered", File.ReadAllText(cached));
@@ -150,12 +152,12 @@ public class CommitPreviewsTests
     public void CompareStitchesARange()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var sha = repository.ResolveCommit("HEAD");
+        var deck = DeckInRepo.At(deckPath);
+        var sha = deck.Repository.ResolveCommit("HEAD");
 
-        var preview = CommitPreviews.RenderForCompare(repository, "decks/my.pptx", deckPath, sha, new PageRange(2, 25));
+        var preview = new CommitPreviews(deck).RenderForCompare(sha, new PageRange(2, 25));
 
-        Assert.Equal(PreviewPaths.ForPages(repository.Root, "decks/my.pptx", sha, new PageRange(2, 3)), preview);
+        Assert.Equal(PathsOf(deck).ForPages(sha, new PageRange(2, 3)), preview);
         Assert.Equal(2 * (SlideStitcher.BandHeight + SlideHeight), RgbaImage.LoadPng(preview).Height);
     }
 
@@ -163,11 +165,11 @@ public class CommitPreviewsTests
     public void CompareOfOnePageUsesThePageFile()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
+        var deck = DeckInRepo.At(deckPath);
 
-        var preview = CommitPreviews.RenderForCompare(repository, "decks/my.pptx", deckPath, PreviewPaths.WorkingCopy, new PageRange(40, 50));
+        var preview = new CommitPreviews(deck).RenderForCompare(PreviewPaths.WorkingCopy, new PageRange(40, 50));
 
-        Assert.Equal(PreviewPaths.ForPage(repository.Root, "decks/my.pptx", PreviewPaths.WorkingCopy, 3), preview);
+        Assert.Equal(PathsOf(deck).ForPage(PreviewPaths.WorkingCopy, 3), preview);
         Assert.Equal(SlideHeight, RgbaImage.LoadPng(preview).Height);
     }
 
@@ -175,10 +177,10 @@ public class CommitPreviewsTests
     public void DeckMissingFromCommitFails()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
-        var sha = repository.ResolveCommit("HEAD");
+        var deck = DeckInRepo.At(deckPath);
+        var sha = deck.Repository.ResolveCommit("HEAD");
 
-        var error = Assert.Throws<InvalidOperationException>(() => CommitPreviews.Render(repository, "decks/other.pptx", sha));
+        var error = Assert.Throws<InvalidOperationException>(() => new CommitPreviews(DeckInRepo.At(folder.Combine("decks", "other.pptx"))).RenderCommit(sha));
         Assert.Equal($"decks/other.pptx does not exist in commit {sha[..7]}.", error.Message);
     }
 
@@ -186,14 +188,14 @@ public class CommitPreviewsTests
     public void WorkingCopyIsRenderedFromDiskEveryTime()
     {
         using var folder = GitRepositoryTests.RepoWithDeck(out var deckPath);
-        var repository = GitRepository.Containing(deckPath);
+        var deck = DeckInRepo.At(deckPath);
         SlideSplitter.Split(TestFolder.ThreeSlideDeck, folder.Path);
         File.Copy(folder.Combine("slide0001.pptx"), deckPath, overwrite: true);
-        var stale = PreviewPaths.For(repository.Root, "decks/my.pptx", PreviewPaths.WorkingCopy);
+        var stale = PathsOf(deck).For(PreviewPaths.WorkingCopy);
         Directory.CreateDirectory(Path.GetDirectoryName(stale)!);
         File.WriteAllText(stale, "stale");
 
-        var preview = CommitPreviews.RenderWorkingCopy(repository, "decks/my.pptx", deckPath);
+        var preview = new CommitPreviews(deck).RenderWorkingCopy();
 
         Assert.Equal(stale, preview);
         Assert.Equal(SlideStitcher.BandHeight + SlideHeight, RgbaImage.LoadPng(preview).Height);
