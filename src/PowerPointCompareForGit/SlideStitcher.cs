@@ -41,22 +41,28 @@ internal static class SlideStitcher
             throw new ArgumentException("There are no rows to stitch.", nameof(rows));
         }
 
-        var slides = rows.SelectMany(row => new[] { row.Left, row.Right }).OfType<NumberedSlide>().ToList();
-        var width = slides.Max(slide => slide.Image.Width);
-        var height = rows.Sum(row => BandHeight + Math.Max(row.Left?.Image.Height ?? 0, row.Right?.Image.Height ?? 0));
-        var left = new RgbaImage(width, height, Background);
-        var right = new RgbaImage(width, height, Background);
+        var left = BlankFor(rows);
+        var right = BlankFor(rows);
 
         var top = 0;
         foreach (var row in rows)
         {
             DrawSlide(left, row.Left, top);
             DrawSlide(right, row.Right, top);
-            top += BandHeight + Math.Max(row.Left?.Image.Height ?? 0, row.Right?.Image.Height ?? 0);
+            top += RowHeight(row);
         }
 
         return (left, right);
     }
+
+    private static RgbaImage BlankFor(IReadOnlyList<(NumberedSlide? Left, NumberedSlide? Right)> rows)
+    {
+        var width = rows.SelectMany(row => new[] { row.Left, row.Right }).OfType<NumberedSlide>().Max(slide => slide.Image.Width);
+        return new RgbaImage(width, rows.Sum(RowHeight), Background);
+    }
+
+    private static int RowHeight((NumberedSlide? Left, NumberedSlide? Right) row)
+        => BandHeight + Math.Max(row.Left?.Image.Height ?? 0, row.Right?.Image.Height ?? 0);
 
     private static void DrawSlide(RgbaImage target, NumberedSlide? slide, int top)
     {
