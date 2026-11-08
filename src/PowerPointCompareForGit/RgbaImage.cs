@@ -46,7 +46,7 @@ internal sealed class RgbaImage
         }
     }
 
-    // Fills the rectangle, clipped to the image.
+    // Clipped to the image.
     internal void Fill(int left, int top, int width, int height, Rgba color)
     {
         for (var y = Math.Max(0, top); y < Math.Min(Height, top + height); y++)

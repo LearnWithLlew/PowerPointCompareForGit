@@ -22,7 +22,7 @@ internal sealed class PreviewPaths(string repoRoot, string deckPath, Renderer re
     // Every preview of every deck in the repo is somewhere under here.
     internal static string CacheFolder(string repoRoot) => Path.Combine(Path.GetFullPath(repoRoot), ".git", "pptx-previews");
 
-    // Deletes the whole cache. Returns false when there was nothing to delete.
+    // Returns false when there was nothing to delete.
     internal static bool Clear(string repoRoot)
     {
         var folder = CacheFolder(repoRoot);
