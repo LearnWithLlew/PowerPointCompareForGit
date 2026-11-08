@@ -14,23 +14,22 @@ internal static class DeckCraftSetup
 
     // Returns the deckcraft-cli path, offering to install DeckCraft and deckcraft-cli when the CLI is missing.
     // Only the CLI renders, so a missing app alone never prompts. With piped input it fails with instructions instead.
-    internal static string Resolve(Func<string?> find, TextReader input, TextWriter prompt, bool inputRedirected, Action install)
+    internal static string Resolve(Func<string?> find, UserConsole console, Action install)
     {
         if (find() is { } found)
         {
             return found;
         }
 
-        if (inputRedirected)
+        if (console.InputRedirected)
         {
             throw new InvalidOperationException(DeckCraft.NotFoundMessage());
         }
 
-        prompt.WriteLine("deckcraft-cli was not found.");
-        prompt.WriteLine($"1. Install DeckCraft and deckcraft-cli (from {Releases})");
-        prompt.WriteLine($"2. Cancel (or use --renderer LibreOffice, or set deckCraftCliPath in {Settings.DefaultPath()})");
-        prompt.Write("Choice: ");
-        if (input.ReadLine()?.Trim() != "1")
+        console.Prompt.WriteLine("deckcraft-cli was not found.");
+        console.Prompt.WriteLine($"1. Install DeckCraft and deckcraft-cli (from {Releases})");
+        console.Prompt.WriteLine($"2. Cancel (or use --renderer LibreOffice, or set deckCraftCliPath in {Settings.DefaultPath()})");
+        if (console.Ask("Choice: ") != "1")
         {
             throw new InvalidOperationException($"Cancelled. {DeckCraft.NotFoundMessage()}");
         }
@@ -49,29 +48,28 @@ internal static class DeckCraftSetup
 
     // Asks whether to update when latest is newer. With piped input it only prints a notice.
     // Returns true when the user chose to update.
-    internal static bool OfferUpdate(Version installed, string latest, TextReader input, TextWriter prompt, bool inputRedirected)
+    internal static bool OfferUpdate(Version installed, string latest, UserConsole console)
     {
         if (!Version.TryParse(latest, out var latestVersion) || latestVersion <= installed)
         {
             return false;
         }
 
-        prompt.WriteLine($"DeckCraft {latest} is available (you have {installed}).");
-        if (inputRedirected)
+        console.Prompt.WriteLine($"DeckCraft {latest} is available (you have {installed}).");
+        if (console.InputRedirected)
         {
-            prompt.WriteLine("Run CreatePowerpointCheckpoint in a terminal to update it.");
+            console.Prompt.WriteLine("Run CreatePowerpointCheckpoint in a terminal to update it.");
             return false;
         }
 
-        prompt.WriteLine("1. Update (this repo's cached DeckCraft previews are deleted, since the old version drew them)");
-        prompt.WriteLine("2. Not now");
-        prompt.Write("Choice: ");
-        return input.ReadLine()?.Trim() == "1";
+        console.Prompt.WriteLine("1. Update (this repo's cached DeckCraft previews are deleted, since the old version drew them)");
+        console.Prompt.WriteLine("2. Not now");
+        return console.Ask("Choice: ") == "1";
     }
 
     // Only updates the copy this tool installed; one on PATH or at deckCraftCliPath is the user's to manage.
     // Returns true when it updated. A failed check is silent, so working offline is unaffected.
-    internal static bool CheckForUpdate(string cli, TextReader input, TextWriter prompt, bool inputRedirected)
+    internal static bool CheckForUpdate(string cli, UserConsole console)
     {
         var stampFile = Path.Combine(Path.GetDirectoryName(Settings.DefaultPath())!, "deckcraft-update-check.txt");
         if (!IsInstalledByUs(cli) || !UpdateCheckIsDue(stampFile, DateTime.UtcNow))
@@ -93,12 +91,12 @@ internal static class DeckCraftSetup
         }
 
         var installed = InstalledVersion(ProcessRunner.Run(cli, ["--version"], Path.GetTempPath()).OutputText);
-        if (installed is null || !OfferUpdate(installed, latest, input, prompt, inputRedirected))
+        if (installed is null || !OfferUpdate(installed, latest, console))
         {
             return false;
         }
 
-        Install(prompt);
+        Install(console.Prompt);
         return true;
     }
 

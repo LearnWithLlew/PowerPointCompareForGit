@@ -76,7 +76,7 @@ public static class Program
     private static void CheckForDeckCraftUpdate(GitRepository repository, Renderer renderer)
     {
         if (renderer == Renderer.DeckCraft
-            && DeckCraftSetup.CheckForUpdate(CommitPreviews.FindDeckCraft(), Console.In, Console.Error, Console.IsInputRedirected))
+            && DeckCraftSetup.CheckForUpdate(CommitPreviews.FindDeckCraft(), UserConsole.Standard()))
         {
             PreviewPaths.ClearDeckCraft(repository.Root);
         }
@@ -129,7 +129,7 @@ public static class Program
 
     private static void OpenInDiffTool(string leftPreview, string rightPreview)
     {
-        var diffTool = DiffToolSetup.Resolve(Settings.DefaultPath(), DiffTools.Detect(), Console.In, Console.Error, Console.IsInputRedirected);
+        var diffTool = DiffToolSetup.Resolve(Settings.DefaultPath(), DiffTools.Detect(), UserConsole.Standard());
         DiffTools.Launch(diffTool, leftPreview, rightPreview);
     }
 

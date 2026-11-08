@@ -6,7 +6,7 @@ internal static class DiffToolSetup
 
     // Returns the saved diff tool command, or asks the user to pick one and saves it.
     // When input is piped there is no one to ask, so it fails with instructions instead.
-    internal static string Resolve(string settingsPath, IReadOnlyList<DiffTool> detected, TextReader input, TextWriter prompt, bool inputRedirected)
+    internal static string Resolve(string settingsPath, IReadOnlyList<DiffTool> detected, UserConsole console)
     {
         var settings = Settings.Load(settingsPath);
         if (!string.IsNullOrWhiteSpace(settings.DiffTool))
@@ -14,31 +14,30 @@ internal static class DiffToolSetup
             return settings.DiffTool;
         }
 
-        if (inputRedirected)
+        if (console.InputRedirected)
         {
             throw new InvalidOperationException(
                 $"No diff tool configured. Run CreatePowerpointCheckpoint --compare once interactively (without piped input) to pick one, " +
                 $"or set \"diffTool\": \"{CustomExample}\" in {settingsPath}.");
         }
 
-        var command = AskForCommand(detected, input, prompt);
+        var command = AskForCommand(detected, console);
         (settings with { DiffTool = command }).Save(settingsPath);
-        prompt.WriteLine($"Saved to {settingsPath}");
+        console.Prompt.WriteLine($"Saved to {settingsPath}");
         return command;
     }
 
-    private static string AskForCommand(IReadOnlyList<DiffTool> detected, TextReader input, TextWriter prompt)
+    private static string AskForCommand(IReadOnlyList<DiffTool> detected, UserConsole console)
     {
-        prompt.WriteLine("Which diff tool should open the PNGs?");
+        console.Prompt.WriteLine("Which diff tool should open the PNGs?");
         for (var i = 0; i < detected.Count; i++)
         {
-            prompt.WriteLine($"{i + 1}. {detected[i].Name} ({detected[i].Command})");
+            console.Prompt.WriteLine($"{i + 1}. {detected[i].Name} ({detected[i].Command})");
         }
 
         var customChoice = detected.Count + 1;
-        prompt.WriteLine($"{customChoice}. Custom (example: {CustomExample})");
-        prompt.Write("Choice: ");
-        var answer = input.ReadLine()?.Trim();
+        console.Prompt.WriteLine($"{customChoice}. Custom (example: {CustomExample})");
+        var answer = console.Ask("Choice: ");
 
         if (int.TryParse(answer, out var choice) && choice >= 1 && choice <= detected.Count)
         {
@@ -47,16 +46,15 @@ internal static class DiffToolSetup
 
         if (answer == customChoice.ToString())
         {
-            return AskForCustomCommand(input, prompt);
+            return AskForCustomCommand(console);
         }
 
         throw new InvalidOperationException($"'{answer}' is not one of the choices.");
     }
 
-    private static string AskForCustomCommand(TextReader input, TextWriter prompt)
+    private static string AskForCustomCommand(UserConsole console)
     {
-        prompt.Write("Command (use {file1} and {file2}): ");
-        var command = input.ReadLine()?.Trim() ?? "";
+        var command = console.Ask("Command (use {file1} and {file2}): ") ?? "";
         if (!command.Contains("{file1}") || !command.Contains("{file2}"))
         {
             throw new InvalidOperationException("The command must contain {file1} and {file2}.");

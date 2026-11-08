@@ -12,7 +12,7 @@ public class DeckCraftSetupTests
     {
         var prompt = new StringWriter();
 
-        var cli = DeckCraftSetup.Resolve(() => "/bin/deckcraft-cli", new StringReader(""), prompt, false, () => Assert.Fail("Should not install"));
+        var cli = DeckCraftSetup.Resolve(() => "/bin/deckcraft-cli", new UserConsole(new StringReader(""), prompt, false), () => Assert.Fail("Should not install"));
 
         Assert.Equal("/bin/deckcraft-cli", cli);
         Assert.Equal("", prompt.ToString());
@@ -23,7 +23,7 @@ public class DeckCraftSetupTests
     {
         string? installed = null;
 
-        var cli = DeckCraftSetup.Resolve(() => installed, new StringReader("1\n"), new StringWriter(), false, () => installed = "/new/deckcraft-cli");
+        var cli = DeckCraftSetup.Resolve(() => installed, new UserConsole(new StringReader("1\n"), new StringWriter(), false), () => installed = "/new/deckcraft-cli");
 
         Assert.Equal("/new/deckcraft-cli", cli);
     }
@@ -33,7 +33,7 @@ public class DeckCraftSetupTests
     {
         var prompt = new StringWriter();
 
-        Assert.Throws<InvalidOperationException>(() => DeckCraftSetup.Resolve(() => null, new StringReader("2\n"), prompt, false, () => { }));
+        Assert.Throws<InvalidOperationException>(() => DeckCraftSetup.Resolve(() => null, new UserConsole(new StringReader("2\n"), prompt, false), () => { }));
 
         Assert.Contains("1. Install DeckCraft and deckcraft-cli", prompt.ToString());
         Assert.Contains("--renderer LibreOffice", prompt.ToString());
@@ -43,7 +43,7 @@ public class DeckCraftSetupTests
     public void CancelDoesNotInstall()
     {
         var error = Assert.Throws<InvalidOperationException>(
-            () => DeckCraftSetup.Resolve(() => null, new StringReader("2\n"), new StringWriter(), false, () => Assert.Fail("Should not install")));
+            () => DeckCraftSetup.Resolve(() => null, new UserConsole(new StringReader("2\n"), new StringWriter(), false), () => Assert.Fail("Should not install")));
 
         Assert.StartsWith("Cancelled.", error.Message);
     }
@@ -54,7 +54,7 @@ public class DeckCraftSetupTests
         var prompt = new StringWriter();
 
         Assert.Throws<InvalidOperationException>(
-            () => DeckCraftSetup.Resolve(() => null, new StringReader("1\n"), prompt, true, () => Assert.Fail("Should not install")));
+            () => DeckCraftSetup.Resolve(() => null, new UserConsole(new StringReader("1\n"), prompt, true), () => Assert.Fail("Should not install")));
         Assert.Equal("", prompt.ToString());
     }
 
@@ -62,7 +62,7 @@ public class DeckCraftSetupTests
     public void InstallThatFindsNothingFails()
     {
         var error = Assert.Throws<InvalidOperationException>(
-            () => DeckCraftSetup.Resolve(() => null, new StringReader("1\n"), new StringWriter(), false, () => { }));
+            () => DeckCraftSetup.Resolve(() => null, new UserConsole(new StringReader("1\n"), new StringWriter(), false), () => { }));
 
         Assert.StartsWith("deckcraft-cli still wasn't found", error.Message);
     }
@@ -93,9 +93,9 @@ public class DeckCraftSetupTests
     {
         var prompt = new StringWriter();
 
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "0.16.0", new StringReader("1\n"), prompt, false));
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "0.15.1", new StringReader("1\n"), prompt, false));
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "not-a-version", new StringReader("1\n"), prompt, false));
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, false)));
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "0.15.1", new UserConsole(new StringReader("1\n"), prompt, false)));
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 16, 0), "not-a-version", new UserConsole(new StringReader("1\n"), prompt, false)));
         Assert.Equal("", prompt.ToString());
     }
 
@@ -104,9 +104,9 @@ public class DeckCraftSetupTests
     {
         var prompt = new StringWriter();
 
-        Assert.True(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new StringReader("1\n"), prompt, false));
+        Assert.True(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, false)));
         Assert.StartsWith("DeckCraft 0.16.0 is available (you have 0.13.1).", prompt.ToString());
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new StringReader("2\n"), new StringWriter(), false));
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("2\n"), new StringWriter(), false)));
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class DeckCraftSetupTests
     {
         var prompt = new StringWriter();
 
-        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new StringReader("1\n"), prompt, true));
+        Assert.False(DeckCraftSetup.OfferUpdate(new Version(0, 13, 1), "0.16.0", new UserConsole(new StringReader("1\n"), prompt, true)));
         Assert.Contains("Run CreatePowerpointCheckpoint in a terminal to update it.", prompt.ToString());
         Assert.DoesNotContain("Choice:", prompt.ToString());
     }

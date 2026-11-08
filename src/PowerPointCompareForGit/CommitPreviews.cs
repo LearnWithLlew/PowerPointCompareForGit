@@ -124,28 +124,20 @@ internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Render
             ? new DeckCraftRenderer(FindDeckCraft())
             : new LibreOfficeRenderer(FindLibreOffice()));
 
-    // Prompts go to stderr so stdout stays a clean list of PNG paths.
     internal static string FindDeckCraft()
     {
         var configuredPath = Settings.Load(Settings.DefaultPath()).DeckCraftCliPath;
-        return DeckCraftSetup.Resolve(
-            () => DeckCraft.Find(configuredPath),
-            Console.In,
-            Console.Error,
-            Console.IsInputRedirected,
-            () => DeckCraftSetup.Install(Console.Error));
+        var console = UserConsole.Standard();
+        return DeckCraftSetup.Resolve(() => DeckCraft.Find(configuredPath), console, () => DeckCraftSetup.Install(console.Prompt));
     }
 
-    // Prompts go to stderr so stdout stays a clean list of PNG paths.
     private static string FindLibreOffice()
     {
         var configuredPath = Settings.Load(Settings.DefaultPath()).LibreOfficePath;
         return LibreOfficeSetup.Resolve(
             () => LibreOffice.Find(configuredPath),
             LibreOfficeSetup.InstallerForThisOs(),
-            Console.In,
-            Console.Error,
-            Console.IsInputRedirected,
+            UserConsole.Standard(),
             LibreOfficeSetup.RunInstaller);
     }
 }

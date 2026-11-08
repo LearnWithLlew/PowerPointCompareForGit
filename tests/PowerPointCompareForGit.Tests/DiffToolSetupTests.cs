@@ -5,7 +5,7 @@ public class DiffToolSetupTests
     private static readonly DiffTool[] Detected = [new("Beyond Compare", "bcomp {file1} {file2}"), new("P4Merge", "p4merge {file1} {file2}")];
 
     private static string Resolve(TestFolder folder, string answers, bool inputRedirected = false)
-        => DiffToolSetup.Resolve(folder.Combine("settings.json"), Detected, new StringReader(answers), new StringWriter(), inputRedirected);
+        => DiffToolSetup.Resolve(folder.Combine("settings.json"), Detected, new UserConsole(new StringReader(answers), new StringWriter(), inputRedirected));
 
     [Fact]
     public void UsesSavedTool()

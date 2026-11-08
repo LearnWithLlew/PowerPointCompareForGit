@@ -17,23 +17,22 @@ internal static class LibreOfficeSetup
 
     // Returns the soffice path, offering to install LibreOffice when it is missing.
     // With piped input, or no installer for this OS, it fails with the install command instead of prompting.
-    internal static string Resolve(Func<string?> find, Installer? installer, TextReader input, TextWriter prompt, bool inputRedirected, Action<Installer> install)
+    internal static string Resolve(Func<string?> find, Installer? installer, UserConsole console, Action<Installer> install)
     {
         if (find() is { } found)
         {
             return found;
         }
 
-        if (installer is null || inputRedirected)
+        if (installer is null || console.InputRedirected)
         {
             throw new InvalidOperationException(LibreOffice.NotFoundMessage());
         }
 
-        prompt.WriteLine("LibreOffice was not found.");
-        prompt.WriteLine($"1. Install via {installer.Name} ({installer.CommandText})");
-        prompt.WriteLine($"2. Cancel (or set libreOfficePath in {Settings.DefaultPath()})");
-        prompt.Write("Choice: ");
-        if (input.ReadLine()?.Trim() != "1")
+        console.Prompt.WriteLine("LibreOffice was not found.");
+        console.Prompt.WriteLine($"1. Install via {installer.Name} ({installer.CommandText})");
+        console.Prompt.WriteLine($"2. Cancel (or set libreOfficePath in {Settings.DefaultPath()})");
+        if (console.Ask("Choice: ") != "1")
         {
             throw new InvalidOperationException($"Cancelled. {LibreOffice.NotFoundMessage()}");
         }

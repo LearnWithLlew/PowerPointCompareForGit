@@ -9,7 +9,7 @@ public class LibreOfficeSetupTests
     {
         var prompt = new StringWriter();
 
-        var soffice = LibreOfficeSetup.Resolve(() => "/bin/soffice", Brew, new StringReader(""), prompt, false, _ => Assert.Fail("Should not install"));
+        var soffice = LibreOfficeSetup.Resolve(() => "/bin/soffice", Brew, new UserConsole(new StringReader(""), prompt, false), _ => Assert.Fail("Should not install"));
 
         Assert.Equal("/bin/soffice", soffice);
         Assert.Equal("", prompt.ToString());
@@ -21,7 +21,7 @@ public class LibreOfficeSetupTests
         string? installed = null;
         Installer? ran = null;
 
-        var soffice = LibreOfficeSetup.Resolve(() => installed, Brew, new StringReader("1\n"), new StringWriter(), false, installer =>
+        var soffice = LibreOfficeSetup.Resolve(() => installed, Brew, new UserConsole(new StringReader("1\n"), new StringWriter(), false), installer =>
         {
             ran = installer;
             installed = "/new/soffice";
@@ -36,7 +36,7 @@ public class LibreOfficeSetupTests
     {
         var prompt = new StringWriter();
 
-        Assert.Throws<InvalidOperationException>(() => LibreOfficeSetup.Resolve(() => null, Brew, new StringReader("2\n"), prompt, false, _ => { }));
+        Assert.Throws<InvalidOperationException>(() => LibreOfficeSetup.Resolve(() => null, Brew, new UserConsole(new StringReader("2\n"), prompt, false), _ => { }));
 
         Assert.Contains("1. Install via brew (brew install --cask libreoffice)", prompt.ToString());
     }
@@ -45,7 +45,7 @@ public class LibreOfficeSetupTests
     public void CancelDoesNotInstall()
     {
         var error = Assert.Throws<InvalidOperationException>(
-            () => LibreOfficeSetup.Resolve(() => null, Brew, new StringReader("2\n"), new StringWriter(), false, _ => Assert.Fail("Should not install")));
+            () => LibreOfficeSetup.Resolve(() => null, Brew, new UserConsole(new StringReader("2\n"), new StringWriter(), false), _ => Assert.Fail("Should not install")));
 
         Assert.StartsWith("Cancelled.", error.Message);
     }
@@ -56,7 +56,7 @@ public class LibreOfficeSetupTests
         var prompt = new StringWriter();
 
         Assert.Throws<InvalidOperationException>(
-            () => LibreOfficeSetup.Resolve(() => null, Brew, new StringReader("1\n"), prompt, true, _ => Assert.Fail("Should not install")));
+            () => LibreOfficeSetup.Resolve(() => null, Brew, new UserConsole(new StringReader("1\n"), prompt, true), _ => Assert.Fail("Should not install")));
         Assert.Equal("", prompt.ToString());
     }
 
@@ -66,7 +66,7 @@ public class LibreOfficeSetupTests
         var prompt = new StringWriter();
 
         Assert.Throws<InvalidOperationException>(
-            () => LibreOfficeSetup.Resolve(() => null, null, new StringReader("1\n"), prompt, false, _ => Assert.Fail("Should not install")));
+            () => LibreOfficeSetup.Resolve(() => null, null, new UserConsole(new StringReader("1\n"), prompt, false), _ => Assert.Fail("Should not install")));
         Assert.Equal("", prompt.ToString());
     }
 }
