@@ -78,4 +78,10 @@ public class DiffToolSetupTests
             ["/Applications/Beyond Compare.app/Contents/MacOS/bcomp", "-ro", "{file1}", "{file2}"],
             DiffTools.Split("\"/Applications/Beyond Compare.app/Contents/MacOS/bcomp\" -ro {file1}  {file2}"));
     }
+
+    [Fact]
+    public void SplitJoinsQuotedAndUnquotedTextAndKeepsEmptyQuotes()
+    {
+        Assert.Equal(["ab cd", "", "open to the end"], DiffTools.Split("a\"b c\"d \"\" \"open to the end"));
+    }
 }
