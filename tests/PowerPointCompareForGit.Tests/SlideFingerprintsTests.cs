@@ -129,21 +129,10 @@ public class SlideFingerprintsTests
         using var folder = new TestFolder();
         var original = SlideFingerprints.Of(TestFolder.ThreeSlideDeck);
 
-        var flagged = Edit(folder, deck =>
-        {
-            var slide = Slide(deck, 0);
-            var run = slide.Slide!.Descendants<A.Run>().First();
-            run.RunProperties = new A.RunProperties { Dirty = false, SmartTagClean = true };
-            slide.Slide.Save();
-        });
+        var flagged = Edit(folder, deck => SetFirstRunProperties(deck, new A.RunProperties { Dirty = false, SmartTagClean = true }));
 
         Assert.NotEqual(original[1], original[0]);
-        var withoutFlags = Edit(folder, deck =>
-        {
-            var slide = Slide(deck, 0);
-            slide.Slide!.Descendants<A.Run>().First().RunProperties = new A.RunProperties();
-            slide.Slide.Save();
-        }, flagged);
+        var withoutFlags = Edit(folder, deck => SetFirstRunProperties(deck, new A.RunProperties()), flagged);
         Assert.Equal(SlideFingerprints.Of(withoutFlags), SlideFingerprints.Of(flagged));
     }
 
@@ -277,6 +266,13 @@ public class SlideFingerprintsTests
         var layout = Slide(deck, 0).SlideLayoutPart!.SlideLayout!;
         layout.Descendants<A.Field>().First().GetFirstChild<A.Text>()!.Text = text;
         layout.Save();
+    }
+
+    private static void SetFirstRunProperties(PresentationDocument deck, A.RunProperties properties)
+    {
+        var slide = Slide(deck, 0);
+        slide.Slide!.Descendants<A.Run>().First().RunProperties = properties;
+        slide.Slide.Save();
     }
 
     private static void AddSlideExtension(PresentationDocument deck, string xml)
