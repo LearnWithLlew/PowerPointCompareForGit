@@ -1,0 +1,10 @@
+plugins = ["csharp", "generic"]
+files = [
+  "src/**/*.cs",
+  "tests/**/*.cs",
+  "!**/bin/**",
+  "!**/obj/**",
+]
+
+[sensors.roslyn]
+args = ["--project", "PowerPointCompareForGit.slnx"]
