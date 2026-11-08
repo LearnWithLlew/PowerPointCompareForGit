@@ -11,30 +11,13 @@ internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Render
     internal string RenderCommit(string sha)
     {
         var previewPath = paths.For(sha);
-        if (File.Exists(previewPath))
-        {
-            return previewPath;
-        }
-
-        if (!deck.Repository.FileExistsAt(sha, deck.RelativePath))
-        {
-            throw new InvalidOperationException($"{deck.RelativePath} does not exist in commit {sha[..7]}.");
-        }
-
-        var deckRenderer = FindRenderer();
-        var work = Directory.CreateTempSubdirectory("pptx-extract-");
-        try
-        {
-            var deckCopy = Path.Combine(work.FullName, Path.GetFileName(deck.RelativePath));
-            deck.Repository.ExtractFile(sha, deck.RelativePath, deckCopy);
-            deckRenderer.Render(deckCopy, previewPath);
-        }
-        finally
-        {
-            work.Delete(recursive: true);
-        }
-
-        return previewPath;
+        return File.Exists(previewPath)
+            ? previewPath
+            : deck.AsOf(sha, deckFile =>
+            {
+                FindRenderer().Render(deckFile, previewPath);
+                return previewPath;
+            });
     }
 
     // Renders the deck as it is on disk. Never cached: it is re-rendered on every run.
