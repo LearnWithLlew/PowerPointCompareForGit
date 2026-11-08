@@ -31,10 +31,31 @@ internal static class LibreOffice
             : "sudo apt install libreoffice";
         return $"LibreOffice was not found. Install it with: {install} (or set \"libreOfficePath\" in {Settings.DefaultPath()}).";
     }
+}
+
+internal sealed class LibreOfficeRenderer(string soffice) : ISlideRenderer
+{
+    public List<RgbaImage> RenderSlides(string deckPath, IReadOnlyList<int> slideNumbers, string work)
+    {
+        var splitFolder = Directory.CreateDirectory(Path.Combine(work, "split")).FullName;
+        var pngFolder = Directory.CreateDirectory(Path.Combine(work, "png")).FullName;
+        var profileFolder = Path.Combine(work, "profile");
+
+        var copies = SlideSplitter.Split(deckPath, splitFolder, slideNumbers);
+        ConvertToPng(copies, pngFolder, profileFolder);
+
+        return copies.Select(copy =>
+        {
+            var png = Path.Combine(pngFolder, Path.ChangeExtension(Path.GetFileName(copy), ".png"));
+            return File.Exists(png)
+                ? RgbaImage.LoadPng(png)
+                : throw new InvalidOperationException($"LibreOffice did not produce {Path.GetFileName(png)}.");
+        }).ToList();
+    }
 
     // Converts every file to PNG in a single launch.
     // A private profile folder keeps this working while the user has LibreOffice open.
-    internal static void ConvertToPng(string soffice, IReadOnlyList<string> files, string outputFolder, string profileFolder)
+    private void ConvertToPng(IReadOnlyList<string> files, string outputFolder, string profileFolder)
     {
         string[] arguments =
         [

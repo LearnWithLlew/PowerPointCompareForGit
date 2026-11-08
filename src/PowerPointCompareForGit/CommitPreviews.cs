@@ -21,13 +21,13 @@ internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Render
             throw new InvalidOperationException($"{deck.RelativePath} does not exist in commit {sha[..7]}.");
         }
 
-        var slideRenderer = FindRenderer();
+        var deckRenderer = FindRenderer();
         var work = Directory.CreateTempSubdirectory("pptx-extract-");
         try
         {
             var deckCopy = Path.Combine(work.FullName, Path.GetFileName(deck.RelativePath));
             deck.Repository.ExtractFile(sha, deck.RelativePath, deckCopy);
-            DeckRenderer.Render(slideRenderer, deckCopy, previewPath);
+            deckRenderer.Render(deckCopy, previewPath);
         }
         finally
         {
@@ -46,7 +46,7 @@ internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Render
         }
 
         var previewPath = paths.For(PreviewPaths.WorkingCopy);
-        DeckRenderer.Render(FindRenderer(), deck.WorkingCopyPath, previewPath);
+        FindRenderer().Render(deck.WorkingCopyPath, previewPath);
         return previewPath;
     }
 
@@ -71,7 +71,7 @@ internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Render
             var previewPath = paths.ForPages(version, clamped);
             if (version == PreviewPaths.WorkingCopy || !File.Exists(previewPath))
             {
-                DeckRenderer.RenderRange(FindRenderer(), deckFile, clamped, previewPath);
+                FindRenderer().RenderRange(deckFile, clamped, previewPath);
             }
 
             return previewPath;
@@ -92,7 +92,7 @@ internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Render
             var rightPreview = paths.ForSelective(right, left);
             if (left == PreviewPaths.WorkingCopy || right == PreviewPaths.WorkingCopy || !File.Exists(leftPreview) || !File.Exists(rightPreview))
             {
-                DeckRenderer.RenderAligned(FindRenderer(), leftDeck, rightDeck, alignment.Rows, leftPreview, rightPreview);
+                FindRenderer().RenderAligned(leftDeck, rightDeck, alignment.Rows, leftPreview, rightPreview);
             }
 
             return new SelectivePreviews(alignment, (leftPreview, rightPreview));
@@ -105,7 +105,7 @@ internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Render
         var missing = pages.Pages.Where(page => version == PreviewPaths.WorkingCopy || !File.Exists(PathFor(page))).ToList();
         if (missing.Count > 0)
         {
-            DeckRenderer.RenderPages(FindRenderer(), deckFile, missing, PathFor);
+            FindRenderer().RenderPages(deckFile, missing, PathFor);
         }
 
         return pages.Pages.Select(PathFor).ToList();
@@ -119,10 +119,10 @@ internal sealed class CommitPreviews(DeckInRepo deck, Renderer renderer = Render
             : pages.ClampTo(slideCount);
     }
 
-    private ISlideRenderer FindRenderer()
-        => renderer == Renderer.DeckCraft
+    private DeckRenderer FindRenderer()
+        => new(renderer == Renderer.DeckCraft
             ? new DeckCraftRenderer(FindDeckCraft())
-            : new LibreOfficeRenderer(FindLibreOffice());
+            : new LibreOfficeRenderer(FindLibreOffice()));
 
     // Prompts go to stderr so stdout stays a clean list of PNG paths.
     internal static string FindDeckCraft()

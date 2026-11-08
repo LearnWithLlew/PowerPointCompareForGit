@@ -11,7 +11,7 @@ public class DeckRendererTests
         using var folder = new TestFolder();
         var output = folder.Combine("previews", "three-slides.png");
 
-        DeckRenderer.Render(new LibreOfficeRenderer(soffice), TestFolder.ThreeSlideDeck, output);
+        new DeckRenderer(new LibreOfficeRenderer(soffice)).Render(TestFolder.ThreeSlideDeck, output);
 
         var image = RgbaImage.LoadPng(output);
         Assert.Equal(960, image.Width);
@@ -24,7 +24,7 @@ public class DeckRendererTests
     [InlineData(100, "slide-100.png")]
     public void DeckCraftBatchFileNames(int slideNumber, string expected)
     {
-        Assert.Equal(Path.Combine("out", expected), DeckCraft.PathInRenderAll("out", slideNumber));
+        Assert.Equal(Path.Combine("out", expected), DeckCraftRenderer.PathInRenderAll("out", slideNumber));
     }
 
     // Experiment: deckcraft-cli is optional and CI doesn't install it, so this only runs where it is on PATH.
@@ -40,7 +40,7 @@ public class DeckRendererTests
         using var folder = new TestFolder();
         var output = folder.Combine("three-slides.png");
 
-        DeckRenderer.Render(new DeckCraftRenderer(cli), TestFolder.ThreeSlideDeck, output);
+        new DeckRenderer(new DeckCraftRenderer(cli)).Render(TestFolder.ThreeSlideDeck, output);
 
         var image = RgbaImage.LoadPng(output);
         Assert.Equal(960, image.Width);
